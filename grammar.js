@@ -1,6 +1,8 @@
 module.exports = grammar({
   name: 'scala',
 
+  inline: $ => [ $.type_param_bounds ],
+
   rules: {
     source_file: _ => 'hello',
 
@@ -228,10 +230,16 @@ module.exports = grammar({
     //   optional(seq('>:', $.type)),
     //   optional(seq('<:', $.type)),
     // ),
-    type_param_bounds: $ => seq(
-      seq(optional(seq('>:', $.type)), optional(seq('<:', $.type))), // subtype_bounds rule
-      repeat(seq(':', $.type))
-    ),
+
+    // This rule is inlined since it matches empty string.
+    // type_param_bounds: $ => seq(
+    //   seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+    //   repeat($.contex_bound)
+    // ),
+
+    lower_bound: $ => seq('>:', $.type),
+    upper_bound: $ => seq('<:', $.type),
+    contex_bound: $ => seq(':', $.type),
 
     // Expressions
 
@@ -367,21 +375,123 @@ module.exports = grammar({
       seq('(', optional(seq($.patterns, ',')), $.pattern2, ':', '_', '*', ')')
     ),
 
-    // FIXME This rules will be later in the grammar.
-    hk_type_param_clause: _ => 'hk_type_param_clause',
-    type_case_clauses: _ => 'type_case_clauses',
-    annotation: _ => 'annotation',
+
+    // Type and Value Parameters
+    cls_type_param_clause: $ => seq('[', $.cls_type_param, repeat(seq(',', $.cls_type_param)), ']'),
+    cls_type_param: $ => seq(
+      repeat($.annotation),
+      optional(choice('+', '-')),
+      $.id,
+      optional($.hk_type_param_clause),
+      seq(
+        seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+        repeat($.contex_bound)
+      ) // type_param_bounds rule
+    ),
+
+    def_type_param_clause: $ => seq('[', $.def_type_param, repeat(seq(',', $.def_type_param)), ']'),
+    def_type_param: $ => seq(
+      repeat($.annotation),
+      $.id,
+      optional($.hk_type_param_clause),
+      seq(
+        seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+        repeat($.contex_bound)
+      ) // type_param_bounds rule
+    ),
+
+    typ_type_param_clause: $ => seq('[', $.typ_type_param, repeat(seq(',', $.typ_type_param)), ']'),
+    typ_type_param: $ => seq(
+      repeat($.annotation),
+      $.id,
+      optional($.hk_type_param_clause),
+      seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+    ),
+
+    hk_type_param_clause: $ => seq('[', $.hk_type_param, repeat(seq(',', $.hk_type_param)), ']'),
+
+    hk_type_param: $ => seq( // TODO in the original rule was Id not id
+      repeat($.annotation),
+      optional(choice('+', '-')),
+      choice(seq($.id, optional($.hk_type_param_clause)),'_') ,
+      seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+    ),
+
+    cls_param_clause: $ => choice(
+      seq(optional($.nl), optional('erased'), '(', optional($.cls_params), ')'),
+      seq('given', optional('erased'), choice(seq('(', $.cls_params, ')'), $.given_types))
+    ),
+    cls_params: $ => seq($.cls_param, repeat(seq(',', $.cls_param))),
+    cls_param: $ => seq(
+      repeat($.annotation),
+      optional(choice(
+        seq(repeat($.modifier), choice('val', 'var')),
+        'inline'
+      )),
+      $.param
+    ),
+
+    param: $ => seq($.id, ':', $.param_type, optional(seq('=', $.expr))),
+
+
+    def_param_clause: $ => choice(
+      seq(
+        optional($.nl),
+        optional('erased'),
+        '(',
+        optional($.def_params),
+        ')'
+      ),
+      $.given_param_clause),
+    given_param_clause: $ => seq(
+      'given',
+      optional('erased'),
+      choice(seq('(', $.def_params, ')'), $.given_types)
+    ),
+    def_params: $ => seq($.def_param, repeat(seq(',', $.def_param))),
+
+    def_param: $ => seq(repeat($.annotation), optional('inline'), $.param),
+
+    given_types: $ => seq($.annot_type, repeat(seq(',', $.annot_type))),
+
+    //Bindings, Imports, and Exports
+
+    bindings: $ => seq('(', $.binding, repeat(seq(',', $.binding)), ')'),
+    binding: $ => seq(choice($.id, '_'), optional(seq(':', $.type))),
+
+    modifier: $ => choice($.local_modifier, $.access_modifier, 'override'),
+
+    local_modifier: _ => choice(
+      'abstract',
+      'final',
+      'sealed',
+      'lazy',
+      'opaque',
+      'inline',
+      'erased'
+    ),
+
+    access_modifier: $ => seq(choice('private', 'protected'), optional($.access_qualifier)),
+    access_qualifier: $ => seq('[', choice($.id, 'this'), ']'),
+
+    annotation: $ => seq('@', $.simple_type, repeat($.par_argument_exprs)),
+
+    import: $ => seq('import', optional('implied'), $.import_expr, repeat(seq(',', $.import_expr))),
+    import_expr: $ => seq($.stable_id, '.', choice($.id, '_', $.import_selectors)),
+    import_selectors: $ => seq('{', repeat(seq($.import_selector, ',')), choice($.import_selector, '_'), '}'),
+    import_selector: $ => seq($.id, optional(seq('=>', choice($.id, '_')))),
+    export: $ => seq('export', optional('implied'), $.import_expr, repeat(seq(',', $.import_expr))),
+
+    // FIXME(daddy) This rules will be later in the grammar.
     refine_dcl: _ => 'refine_dcl',
     xml_pattern: _ => 'xml',
     xml_expr: _ => 'xml',
-    bindings: _ => 'bindings',
     template_body: _ => 'template_body',
     constr_app: _ => 'constr_app',
     quoted_id: _ => 'quoted_id',
-    local_modifier: _ => 'local_modifier',
     def: _ => 'def',
-    import: _ => 'import',
     postfix_expr: _ => 'postfx',
+    modifier: _ => 'mod',
 
   }
 });
