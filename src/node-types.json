@@ -1,11 +1,587 @@
 [
   {
+    "type": "alphaid",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "letter",
+          "named": true
+        },
+        {
+          "type": "op",
+          "named": true
+        },
+        {
+          "type": "upper",
+          "named": true
+        },
+        {
+          "type": "varid",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "char_escape_seq",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "decimal_numeral",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "non_zero_digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "digit",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "non_zero_digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "escape",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "letter",
+          "named": true
+        },
+        {
+          "type": "printable_char",
+          "named": true
+        },
+        {
+          "type": "white_space",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "exponent_part",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "float_type",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "hex_numeral",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "hex_digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "letter",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "lower",
+          "named": true
+        },
+        {
+          "type": "upper",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nl",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "op",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "opchar",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "opchar",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "plainid",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "alphaid",
+          "named": true
+        },
+        {
+          "type": "op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "processed_string_part",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "escape",
+          "named": true
+        },
+        {
+          "type": "printable_char",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "source_file",
     "named": true,
     "fields": {}
   },
   {
+    "type": "string_element",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "char_escape_seq",
+          "named": true
+        },
+        {
+          "type": "printable_char",
+          "named": true
+        },
+        {
+          "type": "unicode_escape",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "unicode_escape",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "hex_digit",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "varid",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "digit",
+          "named": true
+        },
+        {
+          "type": "letter",
+          "named": true
+        },
+        {
+          "type": "lower",
+          "named": true
+        },
+        {
+          "type": "op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "white_space",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "\t",
+    "named": false
+  },
+  {
+    "type": "\n",
+    "named": false
+  },
+  {
+    "type": "\r",
+    "named": false
+  },
+  {
+    "type": "\r\n",
+    "named": false
+  },
+  {
+    "type": " ",
+    "named": false
+  },
+  {
+    "type": "!",
+    "named": false
+  },
+  {
+    "type": "\"",
+    "named": false
+  },
+  {
+    "type": "\"\"\"",
+    "named": false
+  },
+  {
+    "type": "#",
+    "named": false
+  },
+  {
+    "type": "$",
+    "named": false
+  },
+  {
+    "type": "$$",
+    "named": false
+  },
+  {
+    "type": "%",
+    "named": false
+  },
+  {
+    "type": "&",
+    "named": false
+  },
+  {
+    "type": "'",
+    "named": false
+  },
+  {
+    "type": "'(",
+    "named": false
+  },
+  {
+    "type": "'[",
+    "named": false
+  },
+  {
+    "type": "'{",
+    "named": false
+  },
+  {
+    "type": "(",
+    "named": false
+  },
+  {
+    "type": ")",
+    "named": false
+  },
+  {
+    "type": "*",
+    "named": false
+  },
+  {
+    "type": "*/",
+    "named": false
+  },
+  {
+    "type": "+",
+    "named": false
+  },
+  {
+    "type": ",",
+    "named": false
+  },
+  {
+    "type": "-",
+    "named": false
+  },
+  {
+    "type": ".",
+    "named": false
+  },
+  {
+    "type": "/",
+    "named": false
+  },
+  {
+    "type": "/*",
+    "named": false
+  },
+  {
+    "type": "//",
+    "named": false
+  },
+  {
+    "type": "0",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": ";",
+    "named": false
+  },
+  {
+    "type": "<",
+    "named": false
+  },
+  {
+    "type": "=",
+    "named": false
+  },
+  {
+    "type": ">",
+    "named": false
+  },
+  {
+    "type": "?",
+    "named": false
+  },
+  {
+    "type": "@",
+    "named": false
+  },
+  {
+    "type": "D",
+    "named": false
+  },
+  {
+    "type": "E",
+    "named": false
+  },
+  {
+    "type": "F",
+    "named": false
+  },
+  {
+    "type": "L",
+    "named": false
+  },
+  {
+    "type": "X",
+    "named": false
+  },
+  {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "\\",
+    "named": false
+  },
+  {
+    "type": "\\\"",
+    "named": false
+  },
+  {
+    "type": "\\\\",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
+    "type": "^",
+    "named": false
+  },
+  {
+    "type": "_",
+    "named": false
+  },
+  {
+    "type": "`",
+    "named": false
+  },
+  {
+    "type": "b",
+    "named": false
+  },
+  {
+    "type": "block",
+    "named": true
+  },
+  {
+    "type": "char",
+    "named": true
+  },
+  {
+    "type": "d",
+    "named": false
+  },
+  {
+    "type": "e",
+    "named": false
+  },
+  {
+    "type": "f",
+    "named": false
+  },
+  {
+    "type": "false",
+    "named": false
+  },
+  {
     "type": "hello",
+    "named": false
+  },
+  {
+    "type": "hex_digit",
+    "named": true
+  },
+  {
+    "type": "l",
+    "named": false
+  },
+  {
+    "type": "lower",
+    "named": true
+  },
+  {
+    "type": "n",
+    "named": false
+  },
+  {
+    "type": "non_zero_digit",
+    "named": true
+  },
+  {
+    "type": "printable_char",
+    "named": true
+  },
+  {
+    "type": "r",
+    "named": false
+  },
+  {
+    "type": "t",
+    "named": false
+  },
+  {
+    "type": "true",
+    "named": false
+  },
+  {
+    "type": "u",
+    "named": false
+  },
+  {
+    "type": "upper",
+    "named": true
+  },
+  {
+    "type": "x",
+    "named": false
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "|",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
+  },
+  {
+    "type": "~",
     "named": false
   }
 ]

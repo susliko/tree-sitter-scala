@@ -2,8 +2,165 @@ module.exports = grammar({
   name: 'scala',
 
   rules: {
-    source_file: $ => 'hello'
-  }
+    source_file: _ => 'hello',
+
+    // Unicode escapes
+    hex_digit: _ => /[0-9A-Fa-f]/,
+    unicode_escape: $ => seq('\\', 'u', repeat('u'), $.hex_digit, $.hex_digit, $.hex_digit, $.hex_digit),
+
+    // Lexical Syntax
+    white_space: _ => choice( ' ', '\t', '\r', '\n'),
+    upper: _ => /[A-Z$_]/, // TODO and Unicode category Lu
+    lower: _ => /[a-z]/, // TODO and Unicode category Ll
+    letter: $ => choice($.upper, $.lower, /* TODO and Unicode categories Lo, Lt, Lm, Nl */),
+    digit: _ => /[0-9]/,
+    paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"),
+    delim: _ => choice('`', "'", '"', '.', ';', ','),
+    opchar: _ => choice(
+      '!', '#', '%', '&', '*', '+', '-', '/', ':',
+      '<', '=', '>', '?', '@', '\\', '^', '|', '~',
+      // TODO and Unicode categories Sm, So
+    ),
+    printable_char: _ => /[a-zA-Z0-9 ]/, // TODO needs to be “all characters in [\u0020, \u007E] inclusive”
+    char: _ => /[a-zA-Z0-9]/, // TODO no such rule in the grammar figure out whaut should it mean
+    char_escape_seq: _ => seq('\\', choice('b', 't', 'n', 'f', 'r', '"', "'", '\\')),
+      
+    op: $ => seq($.opchar, repeat($.opchar)),
+    varid: $ => seq(
+      $.lower, 
+      seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), // idrest rule
+    ),
+    alphaid: $ => choice(
+      seq(
+        $.upper, 
+        seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), // idrest rule
+      ), 
+      $.varid),
+    plainid: $ => choice($.alphaid, $.op),
+    id: $ => choice(
+      $.plainid,
+      seq(
+        '`', 
+        repeat(choice(
+          // $.char_no_back_quote_or_newline, // TODO. No such rule in the grammar
+          $.unicode_escape,
+          $.char_escape_seq)),
+        '`')
+    ),
+    // idrest: $ =>  seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), Need to inline this rule
+    // TODO think about moving this rule to a different object so it can match empty string
+    quoteId: $ => seq("'", $.alphaid),
+      
+    integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
+    decimal_numeral: $ => seq('0', $.non_zero_digit, repeat($.digit)),
+    hex_numeral: $ => seq('0', choice('x', 'X'), $.hex_digit, repeat($.hex_digit)),
+    digit: $ => choice('0', $.non_zero_digit),
+    non_zero_digit: _ => /[1-9]/,
+
+    floating_point_literal: $ => choice(
+      seq($.digit, repeat($.digit), '.', repeat($.digit), optional($.exponent_part), optional($.float_type)),
+      seq('.', $.digit, repeat($.digit), optional($.exponent_part), optional($.float_type)),
+      seq($.digit, repeat($.digit), $.exponent_part, optional($.float_type)),
+      seq($.digit, repeat($.digit), optional($.exponent_part), $.float_type),
+    ),
+    exponent_part: $ => seq(choice('E', 'e'), optional(choice('+', '-')), $.digit, repeat($.digit)),
+    float_type: _ => choice('F', 'f', 'D', 'd'),
+     
+    boolean_literal: _ => choice('true', 'false'),
+     
+    character_literal: $ => seq("'",  choice($.printable_char, $.char_escape_seq), "'"),
+    
+    string_literal: $ => choice(
+      seq('"', repeat($.string_element)), 
+      seq('"""', 
+        seq(
+          repeat(seq(optional('"'), optional('"'), $.char /* TODO needs to be char without '"' */)),
+          repeat('"')
+        ), // multi_line_chars rule
+        '"""')
+    ),
+    string_element: $ => choice(
+      $.printable_char, // TODO needs to be printable_char without '"' and without '\\'
+      $.unicode_escape,
+      $.char_escape_seq
+    ),
+
+    // This one is inline since it can match an empty string
+    // multi_line_chars: $ => seq(
+    //   repeat(seq(optional('"'), optional('"'), $.char /* TODO needs to be char without '"' */)),
+    //   repeat('"')
+    // ),
+
+    processed_string_literal: $ => choice(
+      seq(
+        $.alphaid, 
+        '"', 
+        repeat(choice(
+          seq(optional('\\'), $.processed_string_part),
+          '\\\\',
+          '\\"'
+        )), 
+        '"'
+      ),
+      seq(
+        $.alphaid,
+        '"""',
+        repeat(choice(
+          seq(
+            optional('"'),
+            optional('"'),
+            $.char, // TODO substitute (‘"’ | ‘$’)
+          ),
+          $.escape
+        )),
+        repeat('"'),
+        '"""'
+      )
+    ),
+
+    processed_string_part: $ => choice(
+      $.printable_char, // TODO substitute (‘"’ | ‘$’ | ‘\’)
+      $.escape
+    ),
+    escape: $ => choice(
+      '$$',
+      seq('$', $.letter, repeat(choice($.letter, $.digit))),
+      seq(
+        '{',
+        $.block, 
+        optional(seq(
+          ';',
+          $.white_space,
+          repeat(
+            seq(
+              $.printable_char, // TODO substitute from printable_char (‘"’ | ‘}’ | ‘ ’ | ‘\t’ | ‘\n’)
+            )
+          ), // string_format rule
+          $.white_space,
+        )),
+        '}',
+      )
+    ),
+
+    // This one is inlined since it matches empty string
+    // string_format: $ => repeat( 
+    //   seq(
+    //     $.printable_char, // TODO substitute from printable_char (‘"’ | ‘}’ | ‘ ’ | ‘\t’ | ‘\n’)
+    //   )
+    // ),
+      
+    comment: _ => choice(
+      seq('/*', /* TODO any sequence of characters; nested comments are allowed ,*/ '*/'),
+      seq('//', /.*/),
+    ),
+
+
+    nl: _ => choice('\n', '\r\n'),
+    semi: $ => choice(';', seq($.nl, repeat($.nl))),
+
+    block: _ => 'block', // FIXME I'm later in the grammar
+
+    }
 });
 
 
