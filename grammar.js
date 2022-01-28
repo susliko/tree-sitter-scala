@@ -158,9 +158,175 @@ module.exports = grammar({
     nl: _ => choice('\n', '\r\n'),
     semi: $ => choice(';', seq($.nl, repeat($.nl))),
 
-    block: _ => 'block', // FIXME I'm later in the grammar
+    // Context-free Syntax
 
-    }
+    // Literals and Paths
+    simple_literal: $ => choice(
+      seq(optional('-'), $.integer_literal),
+      seq(optional('-'), $.floating_point_literal),
+      $.boolean_literal,
+      $.character_literal,
+      $.string_literal
+    ),
+
+    literal: $ => choice($.simple_literal, $.processed_string_literal, 'null'),
+
+    qual_id: $ => seq($.id, repeat(seq('.', $.id))),
+    ids: $ => seq($.id, repeat(seq(',', $.id))),
+
+    path: $ => choice($.stable_id, seq(optional(seq($.id, '.')), 'this')),
+    stable_id: $ => choice(
+      $.id,
+      seq($.path, '.', $.id),
+      seq(optional(seq($.id, '.')), 'super', optional($.class_qualifier), '.', $.id)
+    ),
+    class_qualifier: $ => seq('[', $.id, ']'),
+
+
+    // Types
+    type: $ => choice(
+      seq(repeat(choice('erased', 'given')), $.fun_arg_types, '=>', $.type),
+      seq($.hk_type_param_clause, '=>', $.type),
+      $.match_type,
+      $.infix_type
+    ),
+
+    fun_arg_types: $ => choice(
+      $.infix_type,
+      seq('(', optional(seq($.fun_arg_type, repeat(seq(',', $.fun_arg_type)))), ')'),
+      seq('(', $.typed_fun_param, repeat(seq(',', $.typed_fun_param)), ')')
+    ),
+    typed_fun_param: $ => seq($.id, ':', $.type),
+    match_type: $ => seq($.infix_type, 'match', $.type_case_clauses),
+    infix_type: $ => seq($.refined_type, repeat(seq($.id, optional($.nl), $.refined_type))),
+    refined_type: $ => seq($.annot_type, repeat(seq(optional($.nl), $.refinement))),
+    annot_type: $ => seq($.simple_type, repeat($.annotation)),
+    simple_type: $ => choice(
+      seq($.simple_type, $.type_args),
+      seq($.simple_type, '#', $.id),
+      $.stable_id,
+      seq($.path, '.', 'type'),
+      seq('(', $.arg_types, ')'),
+      seq(
+        '_',
+        seq(optional(seq('>:', $.type)), optional(seq('<:', $.type))) // subtype_bounds rule
+      ),
+      $.refinement,
+      $.simple_literal,
+      seq('$', '{', $.block, '}'),
+    ),
+    arg_types: $ => seq($.type, repeat(seq(',', $.type))),
+    fun_arg_type: $ => choice($.type, seq('=>', $.type)),
+    param_type: $ => seq(optional('=>'), $.param_value_type),
+    param_value_type: $ => seq($.type, optional('*')),
+    type_args: $ => seq('[', $.arg_types, ']'),
+    refinement: $ => seq('{', optional($.refine_dcl), repeat(seq($.semi, optional($.refine_dcl))), '}'),
+    // This rule is inlined since it matches empty string.
+    // subtype_bounds: $ => seq(
+    //   optional(seq('>:', $.type)),
+    //   optional(seq('<:', $.type)),
+    // ),
+    type_param_bounds: $ => seq(
+      seq(optional(seq('>:', $.type)), optional(seq('<:', $.type))), // subtype_bounds rule
+      repeat(seq(':', $.type))
+    ),
+
+// ### Expressions
+// ```ebnf
+// Expr              ::=  [‘given’] [‘erased’] FunParams ‘=>’ Expr
+//                     |  Expr1
+// FunParams         ::=  Bindings
+//                     |  id
+//                     |  ‘_’
+// Expr1             ::=  ‘if’ Expr ‘then’ Expr [[semi] ‘else’ Expr]
+//                     |  ‘while’ Expr ‘do’ Expr
+//                     |  ‘try’ Expr ‘catch’ Expr [‘finally’ Expr]
+//                     |  ‘try’ Expr ‘finally’ Expr
+//                     |  ‘throw’ Expr
+//                     |  ‘return’ [Expr]
+//                     |  ‘for’ Enumerators (‘do’ Expr | ‘yield’ Expr)
+//                     |  [SimpleExpr ‘.’] id ‘=’ Expr
+//                     |  SimpleExpr1 ArgumentExprs ‘=’ Expr
+//                     |  InfixExpr [Ascription]
+//                     |  [‘inline’] InfixExpr ‘match’ ‘{’ CaseClauses ‘}’
+//                     |  ‘implied’ ‘match’ ‘{’ ImpliedCaseClauses ‘}’
+// Ascription        ::=  ‘:’ InfixType
+//                     |  ‘:’ Annotation {Annotation}
+// InfixExpr         ::=  PrefixExpr
+//                     |  InfixExpr id [nl] InfixExpr
+//                     |  InfixExpr ‘given’ (InfixExpr | ParArgumentExprs)
+// PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
+// SimpleExpr        ::=  ‘new’ (ConstrApp [TemplateBody] | TemplateBody)
+//                     |  BlockExpr
+//                     |  ‘$’ ‘{’ Block ‘}’
+//                     |  Quoted
+//                     |  quoteId     // only inside splices
+//                     |  SimpleExpr1
+// SimpleExpr1       ::=  Literal
+//                     |  Path
+//                     |  ‘_’
+//                     |  ‘(’ ExprsInParens ‘)’
+//                     |  SimpleExpr ‘.’ id
+//                     |  SimpleExpr TypeArgs
+//                     |  SimpleExpr1 ArgumentExprs
+//                     |  XmlExpr
+// Quoted            ::=  ‘'’ ‘{’ Block ‘}’
+//                     |  ‘'’ ‘[’ Type ‘]’
+// ExprsInParens     ::=  ExprInParens {‘,’ ExprInParens}
+// ExprInParens      ::=  InfixExpr ‘:’ Type
+//                     |  Expr
+// ParArgumentExprs  ::=  ‘(’ ExprsInParens ‘)’
+//                     |  ‘(’ [ExprsInParens ‘,’] InfixExpr ‘:’ ‘_’ ‘*’ ‘)’
+// ArgumentExprs     ::=  ParArgumentExprs
+//                     |  [nl] BlockExpr
+// BlockExpr         ::=  ‘{’ CaseClauses | Block ‘}’
+// Block             ::=  {BlockStat semi} [Expr]
+// BlockStat         ::=  Import
+//                     |  {Annotation [nl]} {LocalModifier} Def
+//                     |  Expr1
+//
+// Enumerators       ::=  Generator {semi Enumerator | Guard}
+// Enumerator        ::=  Generator
+//                     |  Guard
+//                     |  Pattern1 ‘=’ Expr
+// Generator         ::=  Pattern1 ‘<-’ Expr
+// Guard             ::=  ‘if’ PostfixExpr
+//
+// CaseClauses       ::=  CaseClause { CaseClause }
+// CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block
+// ImpliedCaseClauses::=  ImpliedCaseClause { ImpliedCaseClause }
+// ImpliedCaseClause ::=  ‘case’ PatVar [‘:’ RefinedType] [Guard] ‘=>’ Block
+// TypeCaseClauses   ::=  TypeCaseClause { TypeCaseClause }
+// TypeCaseClause    ::=  ‘case’ InfixType ‘=>’ Type [nl]
+//
+// Pattern           ::=  Pattern1 { ‘|’ Pattern1 }
+// Pattern1          ::=  PatVar ‘:’ RefinedType
+//                     |  Pattern2
+// Pattern2          ::=  [id ‘@’] InfixPattern
+// InfixPattern      ::=  SimplePattern { id [nl] SimplePattern }
+// SimplePattern     ::=  PatVar
+//                     |  Literal
+//                     |  ‘(’ [Patterns] ‘)’
+//                     |  Quoted
+//                     |  XmlPattern
+//                     |  SimplePattern1 [TypeArgs] [ArgumentPatterns]
+// SimplePattern1    ::=  Path
+//                     |  SimplePattern1 ‘.’ id
+// PatVar            ::=  varid
+//                     |  ‘_’
+// Patterns          ::=  Pattern {‘,’ Pattern}
+// ArgumentPatterns  ::=  ‘(’ [Patterns] ‘)’
+//                     |  ‘(’ [Patterns ‘,’] Pattern2 ‘:’ ‘_’ ‘*’ ‘)’
+// ```
+
+
+    // FIXME This rules will be later in the grammar.
+    block: _ => 'block',
+    hk_type_param_clause: _ => 'hk_type_param_clause',
+    type_case_clauses: _ => 'type_case_clauses',
+    annotation: _ => 'annotation',
+    refine_dcl: _ => 'refine_dcl',
+  }
 });
 
 
