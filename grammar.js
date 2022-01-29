@@ -522,31 +522,47 @@ module.exports = grammar({
 
     //Bindings, Imports, and Exports
 
-    bindings: $ => seq('(', $.binding, repeat(seq(',', $.binding)), ')'),
+    bindings: $ => seq('(', optional(seq($.binding, repeat(seq(',', $.binding)))), ')'),
     binding: $ => seq(choice($.id, '_'), optional(seq(':', $.type))),
 
-    modifier: $ => choice($.local_modifier, $.access_modifier, 'override'),
+    modifier: $ => choice($.local_modifier, $.access_modifier, 'override', 'opaque'),
 
     local_modifier: _ => choice(
       'abstract',
       'final',
       'sealed',
+      'open',
+      'implicit',
       'lazy',
-      'opaque',
       'inline',
-      'erased'
     ),
 
     access_modifier: $ => seq(choice('private', 'protected'), optional($.access_qualifier)),
-    access_qualifier: $ => seq('[', choice($.id, 'this'), ']'),
+    access_qualifier: $ => seq('[', $.id, ']'),
 
-    annotation: $ => seq('@', $.simple_type, repeat($.par_argument_exprs)),
+    annotation: $ => seq('@', $.simple_type1, repeat($.par_argument_exprs)),
 
-    import: $ => seq('import', optional('implied'), $.import_expr, repeat(seq(',', $.import_expr))),
-    import_expr: $ => seq($.stable_id, '.', choice($.id, '_', $.import_selectors)),
-    import_selectors: $ => seq('{', repeat(seq($.import_selector, ',')), choice($.import_selector, '_'), '}'),
-    import_selector: $ => seq($.id, optional(seq('=>', choice($.id, '_')))),
-    export: $ => seq('export', optional('implied'), $.import_expr, repeat(seq(',', $.import_expr))),
+    import: $ => seq('import', $.import_expr, repeat(seq(',', $.import_expr))),
+    export: $ => seq('export', $.import_expr, repeat(seq(',', $.import_expr))),
+    import_expr: $ => choice(
+      seq($.simple_ref, repeat(seq('.', $.id)), '.', $.import_spec),
+      seq($.simple_ref, 'as', $.id)
+    ),
+    import_spec: $ => choice(
+      $.named_selector,
+      $.wildcard_selector,
+      seq('{', $.import_selectors, '}')
+    ),
+    named_selector: $ => seq($.id, optional(seq('as', choice($.id, '_')))),
+    wildcard_selector: $ => choice('*', seq('given', optional($.infix_type))),
+    import_selectors: $ => choice(
+      seq($.named_selector, optional(seq(',', $.import_selectors))),
+      seq($.wildcard_selector, repeat(seq(',', $.wildcard_selector)))
+    ),
+    end_marker: $ => seq('end', $.end_marker_tag), // TODO when followed by EOL
+    end_marker_tag: _ => choice(
+      'id', 'if', 'while', 'for', 'match', 'try', 
+      'new', 'this', 'given', 'extension', 'val'),
 
     // Declarations and Definitions
  

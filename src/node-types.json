@@ -20,7 +20,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "id",
@@ -92,7 +92,7 @@
           "named": true
         },
         {
-          "type": "simple_type",
+          "type": "simple_type1",
           "named": true
         }
       ]
@@ -184,7 +184,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "binding",
@@ -1676,26 +1676,11 @@
           "named": true
         },
         {
-          "type": "import_selectors",
+          "type": "import_spec",
           "named": true
         },
         {
-          "type": "stable_id",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "import_selector",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "id",
+          "type": "simple_ref",
           "named": true
         }
       ]
@@ -1707,10 +1692,41 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
-          "type": "import_selector",
+          "type": "import_selectors",
+          "named": true
+        },
+        {
+          "type": "named_selector",
+          "named": true
+        },
+        {
+          "type": "wildcard_selector",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "import_spec",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "import_selectors",
+          "named": true
+        },
+        {
+          "type": "named_selector",
+          "named": true
+        },
+        {
+          "type": "wildcard_selector",
           "named": true
         }
       ]
@@ -1901,6 +1917,21 @@
         },
         {
           "type": "type_case_clauses",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "named_selector",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "id",
           "named": true
         }
       ]
@@ -2738,11 +2769,6 @@
     "fields": {}
   },
   {
-    "type": "stable_id",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "string_element",
     "named": true,
     "fields": {},
@@ -3262,6 +3288,21 @@
     "fields": {}
   },
   {
+    "type": "wildcard_selector",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "infix_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "xml_expr",
     "named": true,
     "fields": {}
@@ -3504,6 +3545,10 @@
     "named": false
   },
   {
+    "type": "as",
+    "named": false
+  },
+  {
     "type": "b",
     "named": false
   },
@@ -3608,7 +3653,15 @@
     "named": true
   },
   {
+    "type": "id",
+    "named": false
+  },
+  {
     "type": "if",
+    "named": false
+  },
+  {
+    "type": "implicit",
     "named": false
   },
   {
@@ -3664,7 +3717,7 @@
     "named": false
   },
   {
-    "type": "opaque",
+    "type": "open",
     "named": false
   },
   {
