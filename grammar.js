@@ -1,3 +1,19 @@
+// https://github.com/lampepfl/dotty/blob/d871d35b91ea9a56341676921df14c60dee62ac7/docs/docs/internals/syntax.md
+
+const block = (rule, $) => {
+  return choice(
+    seq('{', rule, '}'),
+    seq($.indent, rule, $.outdent),
+  )
+}
+
+const block_body = (rule, $) => {
+  return choice(
+    seq(optional($.nl), '{', rule, '}'),
+    seq(':', $.indent, rule, $.outdent),
+  )
+}
+
 module.exports = grammar({
   name: 'scala',
 
@@ -54,18 +70,49 @@ module.exports = grammar({
     quoteId: $ => seq("'", $.alphaid),
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
-    decimal_numeral: $ => seq('0', $.non_zero_digit, repeat($.digit)),
-    hex_numeral: $ => seq('0', choice('x', 'X'), $.hex_digit, repeat($.hex_digit)),
-    digit: $ => choice('0', $.non_zero_digit),
+    decimal_numeral: $ => choice(
+      '0', 
+      seq(
+        $.non_zero_digit, 
+        optional(seq(
+            repeat(choice($.digit, '_')), 
+            $.digit
+        ))
+      )
+    ),
+    hex_numeral: $ => seq(
+      '0',
+      choice('x', 'X'),
+      $.hex_digit,
+      optional(seq(
+        repeat(choice($.hex_digit, '_')),
+        $.hex_digit
+      ))
+    ),
     non_zero_digit: _ => /[1-9]/,
 
     floating_point_literal: $ => choice(
-      seq($.digit, repeat($.digit), '.', repeat($.digit), optional($.exponent_part), optional($.float_type)),
-      seq('.', $.digit, repeat($.digit), optional($.exponent_part), optional($.float_type)),
-      seq($.digit, repeat($.digit), $.exponent_part, optional($.float_type)),
-      seq($.digit, repeat($.digit), optional($.exponent_part), $.float_type),
+      seq(
+        optional($.decimal_numeral),
+        '.',
+        $.digit,
+        optional(seq(repeat(choice($.digit, '_')), $.digit)),
+        optional($.exponent_part),
+        optional($.float_type)
+      ),
+      seq($.decimal_numeral, $.exponent_part, optional($.float_type)),
+      seq($.decimal_numeral, $.float_type)
     ),
-    exponent_part: $ => seq(choice('E', 'e'), optional(choice('+', '-')), $.digit, repeat($.digit)),
+
+    exponent_part: $ => seq(
+      choice('E', 'e'), 
+      optional(choice('+', '-')), 
+      $.digit, 
+      optional(seq(
+        repeat(choice($.digit, '_')),
+        $.digit
+      ))
+    ),
     float_type: _ => choice('F', 'f', 'D', 'd'),
 
     boolean_literal: _ => choice('true', 'false'),
@@ -150,6 +197,8 @@ module.exports = grammar({
     //     $.printable_char, // TODO substitute from printable_char (‘"’ | ‘}’ | ‘ ’ | ‘\t’ | ‘\n’)
     //   )
     // ),
+
+    symbol_literal: $ => seq("'", $.plainid), // until 2.13
 
     comment: _ => choice(
       seq('/*', /* TODO any sequence of characters; nested comments are allowed ,*/ '*/'),
@@ -375,7 +424,6 @@ module.exports = grammar({
       seq('(', optional(seq($.patterns, ',')), $.pattern2, ':', '_', '*', ')')
     ),
 
-
     // Type and Value Parameters
     cls_type_param_clause: $ => seq('[', $.cls_type_param, repeat(seq(',', $.cls_type_param)), ']'),
     cls_type_param: $ => seq(
@@ -482,396 +530,207 @@ module.exports = grammar({
     import_selector: $ => seq($.id, optional(seq('=>', choice($.id, '_')))),
     export: $ => seq('export', optional('implied'), $.import_expr, repeat(seq(',', $.import_expr))),
 
+    // Declarations and Definitions
+ 
+    refine_dcl: $ => choice(
+      seq('val', $.val_dcl),
+      seq('def', $.def_dcl),
+      seq('type', repeat($.nl), $.type_dcl)
+    ),
+ 
+    dcl: $ => choice($.refine_dcl, seq('var', $.var_dcl)),
+    val_dcl: $ => seq($.ids, ':', $.type),
+    var_dcl: $ => seq($.ids, ':', $.type),
+    def_dcl: $ => seq($.def_sig, ':', $.type),
+    def_sig: $ => seq($.id, optional($.def_type_param_clause), $.def_param_clauses),
+    type_dcl: $ => seq(
+      $.id,
+      optional($.type_param_clause),
+      repeat($.fun_param_clause),
+      $.type_bounds,
+      optional(seq('=', $.type))
+    ),
+    def: $ => choice(
+      seq('val', $.pat_def),
+      seq('var', $.pat_def),
+      seq('def', $.def_def),
+      seq('type', repeat($.nl), $.type_dcl),
+
+      seq($.tmpl_def)
+    ),
+    pat_def: $ => choice(
+      seq($.ids, optional(seq(':', $.type)), '=', $.expr),
+      seq($.pattern2, optional(seq(':', $.type)), '=', $.expr,)
+    ),
+    def_def: $ => choice(
+      seq($.def_sig, optional(seq(':', $.type)), '=', $.expr),
+      seq('this', $.def_param_clause, $.def_param_clauses, '=', $.constr_expr)
+    ),
+    tmpl_def: $ => choice(
+      seq(choice(seq(optional('case'), 'class'), 'trait'), $.class_def),
+      seq(optional('case'), 'object', $.object_def),
+      seq('enum', $.enum_def),
+      seq('given', $.given_def),
+    ),
+
+    class_def: $ => seq(
+      $.id, 
+      $.class_constr, 
+      optional(seq(
+        seq(
+          optional(seq('extends', $.constr_apps)), 
+          optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+        ), // inherit_clauses rule
+        optional($.template_body)
+      )), // optional(template) rule
+    ),
+    class_constr: $ => seq(
+      optional($.cls_type_param_clause), 
+      optional(seq(repeat($.annotation), optional($.access_modifier))), // optional(constr_mods) rule
+      $.cls_param_clauses
+    ),
+    // This rule is inlined since it matches an empty string
+    // constr_mods: $ => seq(repeat($.annotation), optional($.access_modifier)),
+    object_def: $ => seq(
+      $.id, 
+      optional(seq(
+        seq(
+          optional(seq('extends', $.constr_apps)), 
+          optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+        ), // inherit_clauses rule
+        optional($.template_body)
+      )), // optional(template) rule
+    ),
+    enum_def: $ => seq(
+      $.id, 
+      $.class_constr, 
+      seq(
+        optional(seq('extends', $.constr_apps)), 
+        optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+      ), // inherit_clauses rule
+      $.enum_body),
+    given_def: $ => seq(
+      optional($.given_sig), 
+      choice(seq($.annot_type, optional(seq('=', $.expr))), $.structural_instance)
+    ),
+    given_sig: $ => seq(optional($.id), optional($.def_type_param_clause), repeat($.using_param_clause), ':'),
+    structural_instance: $ => seq(
+      $.constr_app,
+      repeat(seq('with', $.constr_app)),
+      optional(seq('with', $.template_body))
+    ),
+    extension: $ => seq(
+      'extension',
+      optional($.def_type_param_clause),
+      repeat($.using_param_clause),
+      '(', $.def_param, ')',
+      repeat($.using_param_clause),
+      $.ext_methods
+    ),
+    ext_methods: $ => choice(
+      $.ext_method, 
+      seq(optional($.nl), block(seq($.ext_method, repeat(seq($.semi, $.ext_method))), $))
+    ),
+    ext_method: $ => seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), 'def', $.def_def),
+    // This rule is inlined since it matches an empty string
+    // template: $ => seq(
+    //   seq(
+    //     optional(seq('extends', $.constr_apps)), 
+    //     optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+    //   ), // inherit_clauses rule
+    //   optional($.template_body)
+    // ),
+    // This rule is inlined since it matches an emtpy string
+    // inherit_clauses: $ => seq(
+    //   optional(seq('extends', $.constr_apps)), 
+    //   optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+    // ),
+    constr_apps: $ => seq(
+      $.constr_app, 
+      choice(repeat(seq(',', $.constr_app)), repeat(seq('with', $.constr_app)))
+    ),
+    constr_app: $ => seq($.simple_type1, repeat($.annotation), repeat($.par_argument_exprs)),
+    constr_expr: $ => choice(
+      $.self_invocation,
+      block(seq($.self_invocation, repeat(seq($.semi, $.block_stat))), $)
+    ),
+    self_invocation: $ => seq('this', $.argument_exprs, repeat($.argument_exprs)),
+
+    template_body: $ => block_body(seq(
+      optional($.self_type), 
+      $.template_stat, 
+      repeat(seq($.semi, $.template_stat))
+    ), $),
+      
+    template_stat: $ => choice(
+      $.import,
+      $.export,
+      seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), $.def),
+      seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), $.dcl),
+      $.extension,
+      $.expr1,
+      $.end_marker
+    ),
+    self_type: $ => choice(
+      seq($.id, optional(seq(':', $.infix_type)), '=>'),
+      seq('this', ':', $.infix_type, '=>')
+    ),
+
+    enum_body: $ => block_body(seq(
+      optional($.self_type), $.enum_stat, repeat(seq($.semi, $.enum_stat)),
+    ), $),
+    enum_stat: $ => choice(
+      $.template_stat,
+      seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), $.enum_case),
+    ),
+    enum_case: $ => seq(
+      'case', 
+      choice(
+        seq($.id, $.class_constr, optional(seq('extends', $.constr_apps))), 
+        $.ids
+      )
+    ),
+
+    top_stats: $ => seq($.top_stat, repeat(seq($.semi, $.top_stat))),
+    top_stat: $ => choice(
+      $.import,
+      $.export,
+      seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), $.def),
+      $.extension,
+      $.packaging,
+      $.package_object,
+      $.end_marker,
+    ),
+
+    packaging: $ => seq('package', $.qual_id, block_body($.top_stats, $)), 
+    package_object: $ => seq('package', 'object', $.object_def),
+
+    compilation_unit: $ => seq(repeat(seq('package', $.qual_id, $.semi)), $.top_stats),
+
+
+
     // FIXME(daddy) This rules will be later in the grammar.
     refine_dcl: _ => 'refine_dcl',
     xml_pattern: _ => 'xml',
     xml_expr: _ => 'xml',
-    template_body: _ => 'template_body',
     constr_app: _ => 'constr_app',
     quoted_id: _ => 'quoted_id',
-    def: _ => 'def',
     postfix_expr: _ => 'postfx',
     modifier: _ => 'mod',
+    def_param_clauses: _ => 'aaaa',
+    type_param_clause: _ => 'aaaa',
+    fun_param_clause: _ => 'aaaa',
+    type_bounds: _ => 'aaaa',
+    using_param_clause: _ => 'aaaa',
+    cls_param_clauses: _ => 'aaaa',
+    def_param_clauses: _ => 'aaaa',
+    indent: _ => 'aaaa',
+    outdent: _ => 'aaaa',
+    def_param_clauses: _ => 'aaaa',
+    end_marker: _ => 'aaaa',
+    def_param_clauses: _ => 'aaaa',
+
 
   }
 });
 
-
-/*
-
-The following descriptions of Scala tokens uses literal characters `‘c’` when
-referring to the ASCII fragment `\u0000` – `\u007F`.
-
-_Unicode escapes_ are used to represent the Unicode character with the given
-hexadecimal code:
-
-```ebnf
-UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
-hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
-```
-
-Informal descriptions are typeset as `“some comment”`.
-
-### Lexical Syntax
-The lexical syntax of Scala is given by the following grammar in EBNF
-form.
-
-```ebnf
-whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
-upper            ::=  ‘A’ | … | ‘Z’ | ‘\$’ | ‘_’  “… and Unicode category Lu”
-lower            ::=  ‘a’ | … | ‘z’ “… and Unicode category Ll”
-letter           ::=  upper | lower “… and Unicode categories Lo, Lt, Lm, Nl”
-digit            ::=  ‘0’ | … | ‘9’
-paren            ::=  ‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ | ‘'(’ | ‘'[’ | ‘'{’
-delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’
-opchar           ::=  ‘!’ | ‘#’ | ‘%’ | ‘&’ | ‘*’ | ‘+’ | ‘-’ | ‘/’ | ‘:’ |
-                      ‘<’ | ‘=’ | ‘>’ | ‘?’ | ‘@’ | ‘\’ | ‘^’ | ‘|’ | ‘~’
-                      “… and Unicode categories Sm, So”
-printableChar    ::=  “all characters in [\u0020, \u007E] inclusive”
-charEscapeSeq    ::=  ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
-
-op               ::=  opchar {opchar}
-varid            ::=  lower idrest
-alphaid          ::=  upper idrest
-                   |  varid
-plainid          ::=  alphaid
-                   |  op
-id               ::=  plainid
-                   |  ‘`’ { charNoBackQuoteOrNewline | UnicodeEscape | charEscapeSeq } ‘`’
-idrest           ::=  {letter | digit} [‘_’ op]
-quoteId          ::=  ‘'’ alphaid
-
-integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
-decimalNumeral   ::=  ‘0’ | nonZeroDigit {digit}
-hexNumeral       ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
-digit            ::=  ‘0’ | nonZeroDigit
-nonZeroDigit     ::=  ‘1’ | … | ‘9’
-
-floatingPointLiteral
-                 ::=  digit {digit} ‘.’ {digit} [exponentPart] [floatType]
-                   |  ‘.’ digit {digit} [exponentPart] [floatType]
-                   |  digit {digit} exponentPart [floatType]
-                   |  digit {digit} [exponentPart] floatType
-exponentPart     ::=  (‘E’ | ‘e’) [‘+’ | ‘-’] digit {digit}
-floatType        ::=  ‘F’ | ‘f’ | ‘D’ | ‘d’
-
-booleanLiteral   ::=  ‘true’ | ‘false’
-
-characterLiteral ::=  ‘'’ (printableChar | charEscapeSeq) ‘'’
-
-stringLiteral    ::=  ‘"’ {stringElement} ‘"’
-                   |  ‘"""’ multiLineChars ‘"""’
-stringElement    ::=  printableChar \ (‘"’ | ‘\’)
-                   |  UnicodeEscape
-                   |  charEscapeSeq
-multiLineChars   ::=  {[‘"’] [‘"’] char \ ‘"’} {‘"’}
-processedStringLiteral
-                 ::=  alphaid ‘"’ {[‘\’] processedStringPart | ‘\\’ | ‘\"’} ‘"’
-                   |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘$’) | escape} {‘"’} ‘"""’
-processedStringPart
-                 ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
-escape           ::=  ‘$$’
-                   |  ‘$’ letter { letter | digit }
-                   |  ‘{’ Block  [‘;’ whiteSpace stringFormat whiteSpace] ‘}’
-stringFormat     ::=  {printableChar \ (‘"’ | ‘}’ | ‘ ’ | ‘\t’ | ‘\n’)}
-
-comment          ::=  ‘/*’ “any sequence of characters; nested comments are allowed” ‘*TODO/’
-                   |  ‘//’ “any sequence of characters up to end of line”
-
-nl               ::=  “new line character”
-semi             ::=  ‘;’ |  nl {nl}
-```
-
-## Keywords
-
-### Regular keywords
-
-```
-abstract  case      catch     class     def       do        else      enum
-erased    extends   false     final     finally   for       given     if
-implied   import    lazy      match     new       null      object    package
-private   protected override  return    super     sealed    then      throw
-trait     true      try       type      val       var       while     yield
-:         =         <-        =>        <:        >:        #         @
-```
-
-### Soft keywords
-
-```
-derives   inline    opaque
-*         |         &         +         -
-```
-
-## Context-free Syntax
-
-The context-free syntax of Scala is given by the following EBNF
-grammar:
-
-### Literals and Paths
-```ebnf
-SimpleLiteral     ::=  [‘-’] integerLiteral
-                    |  [‘-’] floatingPointLiteral
-                    |  booleanLiteral
-                    |  characterLiteral
-                    |  stringLiteral
-Literal           ::=  SimpleLiteral
-                    |  processedStringLiteral
-                    |  ‘null’
-
-QualId            ::=  id {‘.’ id}
-ids               ::=  id {‘,’ id}
-
-Path              ::=  StableId
-                    |  [id ‘.’] ‘this’
-StableId          ::=  id
-                    |  Path ‘.’ id
-                    |  [id ‘.’] ‘super’ [ClassQualifier] ‘.’ id
-ClassQualifier    ::=  ‘[’ id ‘]’
-```
-
-### Types
-```ebnf
-Type              ::=  { ‘erased’ | ‘given’} FunArgTypes ‘=>’ Type
-                    |  HkTypeParamClause ‘=>’ Type
-                    |  MatchType
-                    |  InfixType
-FunArgTypes       ::=  InfixType
-                    |  ‘(’ [ FunArgType {‘,’ FunArgType } ] ‘)’
-                    |  ‘(’ TypedFunParam {‘,’ TypedFunParam } ‘)’
-TypedFunParam     ::=  id ‘:’ Type
-MatchType         ::=  InfixType `match` TypeCaseClauses
-InfixType         ::=  RefinedType {id [nl] RefinedType}
-RefinedType       ::=  AnnotType {[nl] Refinement}
-AnnotType         ::=  SimpleType {Annotation}
-SimpleType        ::=  SimpleType TypeArgs
-                    |  SimpleType ‘#’ id
-                    |  StableId
-                    |  Path ‘.’ ‘type’
-                    |  ‘(’ ArgTypes ‘)’
-                    |  ‘_’ SubtypeBounds
-                    |  Refinement
-                    |  SimpleLiteral
-                    |  ‘$’ ‘{’ Block ‘}’
-ArgTypes          ::=  Type {‘,’ Type}
-FunArgType        ::=  Type
-                    |  ‘=>’ Type
-ParamType         ::=  [‘=>’] ParamValueType
-ParamValueType    ::=  Type [‘*’]
-TypeArgs          ::=  ‘[’ ArgTypes ‘]’
-Refinement        ::=  ‘{’ [RefineDcl] {semi [RefineDcl]} ‘}’
-SubtypeBounds     ::=  [‘>:’ Type] [‘<:’ Type]
-TypeParamBounds   ::=  SubtypeBounds {‘:’ Type}
-```
-
-### Expressions
-```ebnf
-Expr              ::=  [‘given’] [‘erased’] FunParams ‘=>’ Expr
-                    |  Expr1
-FunParams         ::=  Bindings
-                    |  id
-                    |  ‘_’
-Expr1             ::=  ‘if’ Expr ‘then’ Expr [[semi] ‘else’ Expr]
-                    |  ‘while’ Expr ‘do’ Expr
-                    |  ‘try’ Expr ‘catch’ Expr [‘finally’ Expr]
-                    |  ‘try’ Expr ‘finally’ Expr
-                    |  ‘throw’ Expr
-                    |  ‘return’ [Expr]
-                    |  ‘for’ Enumerators (‘do’ Expr | ‘yield’ Expr)
-                    |  [SimpleExpr ‘.’] id ‘=’ Expr
-                    |  SimpleExpr1 ArgumentExprs ‘=’ Expr
-                    |  InfixExpr [Ascription]
-                    |  [‘inline’] InfixExpr ‘match’ ‘{’ CaseClauses ‘}’
-                    |  ‘implied’ ‘match’ ‘{’ ImpliedCaseClauses ‘}’
-Ascription        ::=  ‘:’ InfixType
-                    |  ‘:’ Annotation {Annotation}
-InfixExpr         ::=  PrefixExpr
-                    |  InfixExpr id [nl] InfixExpr
-                    |  InfixExpr ‘given’ (InfixExpr | ParArgumentExprs)
-PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
-SimpleExpr        ::=  ‘new’ (ConstrApp [TemplateBody] | TemplateBody)
-                    |  BlockExpr
-                    |  ‘$’ ‘{’ Block ‘}’
-                    |  Quoted
-                    |  quoteId     // only inside splices
-                    |  SimpleExpr1
-SimpleExpr1       ::=  Literal
-                    |  Path
-                    |  ‘_’
-                    |  ‘(’ ExprsInParens ‘)’
-                    |  SimpleExpr ‘.’ id
-                    |  SimpleExpr TypeArgs
-                    |  SimpleExpr1 ArgumentExprs
-                    |  XmlExpr
-Quoted            ::=  ‘'’ ‘{’ Block ‘}’
-                    |  ‘'’ ‘[’ Type ‘]’
-ExprsInParens     ::=  ExprInParens {‘,’ ExprInParens}
-ExprInParens      ::=  InfixExpr ‘:’ Type
-                    |  Expr
-ParArgumentExprs  ::=  ‘(’ ExprsInParens ‘)’
-                    |  ‘(’ [ExprsInParens ‘,’] InfixExpr ‘:’ ‘_’ ‘*’ ‘)’
-ArgumentExprs     ::=  ParArgumentExprs
-                    |  [nl] BlockExpr
-BlockExpr         ::=  ‘{’ CaseClauses | Block ‘}’
-Block             ::=  {BlockStat semi} [Expr]
-BlockStat         ::=  Import
-                    |  {Annotation [nl]} {LocalModifier} Def
-                    |  Expr1
-
-Enumerators       ::=  Generator {semi Enumerator | Guard}
-Enumerator        ::=  Generator
-                    |  Guard
-                    |  Pattern1 ‘=’ Expr
-Generator         ::=  Pattern1 ‘<-’ Expr
-Guard             ::=  ‘if’ PostfixExpr
-
-CaseClauses       ::=  CaseClause { CaseClause }
-CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block
-ImpliedCaseClauses::=  ImpliedCaseClause { ImpliedCaseClause }
-ImpliedCaseClause ::=  ‘case’ PatVar [‘:’ RefinedType] [Guard] ‘=>’ Block
-TypeCaseClauses   ::=  TypeCaseClause { TypeCaseClause }
-TypeCaseClause    ::=  ‘case’ InfixType ‘=>’ Type [nl]
-
-Pattern           ::=  Pattern1 { ‘|’ Pattern1 }
-Pattern1          ::=  PatVar ‘:’ RefinedType
-                    |  Pattern2
-Pattern2          ::=  [id ‘@’] InfixPattern
-InfixPattern      ::=  SimplePattern { id [nl] SimplePattern }
-SimplePattern     ::=  PatVar
-                    |  Literal
-                    |  ‘(’ [Patterns] ‘)’
-                    |  Quoted
-                    |  XmlPattern
-                    |  SimplePattern1 [TypeArgs] [ArgumentPatterns]
-SimplePattern1    ::=  Path
-                    |  SimplePattern1 ‘.’ id
-PatVar            ::=  varid
-                    |  ‘_’
-Patterns          ::=  Pattern {‘,’ Pattern}
-ArgumentPatterns  ::=  ‘(’ [Patterns] ‘)’
-                    |  ‘(’ [Patterns ‘,’] Pattern2 ‘:’ ‘_’ ‘*’ ‘)’
-```
-
-### Type and Value Parameters
-```ebnf
-ClsTypeParamClause::=  ‘[’ ClsTypeParam {‘,’ ClsTypeParam} ‘]’
-ClsTypeParam      ::=  {Annotation} [‘+’ | ‘-’] id [HkTypeParamClause] TypeParamBounds
-
-DefTypeParamClause::=  ‘[’ DefTypeParam {‘,’ DefTypeParam} ‘]’
-DefTypeParam      ::=  {Annotation} id [HkTypeParamClause] TypeParamBounds
-
-TypTypeParamClause::=  ‘[’ TypTypeParam {‘,’ TypTypeParam} ‘]’
-TypTypeParam      ::=  {Annotation} id [HkTypeParamClause] SubtypeBounds
-
-HkTypeParamClause ::=  ‘[’ HkTypeParam {‘,’ HkTypeParam} ‘]’
-HkTypeParam       ::=  {Annotation} [‘+’ | ‘-’] (Id[HkTypeParamClause] | ‘_’) SubtypeBounds
-
-ClsParamClause    ::=  [nl] [‘erased’] ‘(’ [ClsParams] ‘)’
-                    |  ‘given’ [‘erased’] (‘(’ ClsParams ‘)’ | GivenTypes)
-ClsParams         ::=  ClsParam {‘,’ ClsParam}
-ClsParam          ::=  {Annotation} [{Modifier} (‘val’ | ‘var’) | ‘inline’] Param
-Param             ::=  id ‘:’ ParamType [‘=’ Expr]
-
-DefParamClause    ::=  [nl] [‘erased’] ‘(’ [DefParams] ‘)’ | GivenParamClause
-GivenParamClause  ::=  ‘given’ [‘erased’] (‘(’ DefParams ‘)’ | GivenTypes)
-DefParams         ::=  DefParam {‘,’ DefParam}
-DefParam          ::=  {Annotation} [‘inline’] Param
-GivenTypes        ::=  AnnotType {‘,’ AnnotType}
-```
-
-### Bindings, Imports, and Exports
-```ebnf
-Bindings          ::=  ‘(’ Binding {‘,’ Binding} ‘)’
-Binding           ::=  (id | ‘_’) [‘:’ Type]
-
-Modifier          ::=  LocalModifier
-                    |  AccessModifier
-                    |  ‘override’
-LocalModifier     ::=  ‘abstract’
-                    |  ‘final’
-                    |  ‘sealed’
-                    |  ‘lazy’
-                    |  ‘opaque’
-                    |  ‘inline’
-                    |  ‘erased’
-AccessModifier    ::=  (‘private’ | ‘protected’) [AccessQualifier]
-AccessQualifier   ::=  ‘[’ (id | ‘this’) ‘]’
-
-Annotation        ::=  ‘@’ SimpleType {ParArgumentExprs}
-
-Import            ::=  ‘import’ [‘implied’] ImportExpr {‘,’ ImportExpr}
-ImportExpr        ::=  StableId ‘.’ (id | ‘_’ | ImportSelectors)
-ImportSelectors   ::=  ‘{’ {ImportSelector ‘,’} (ImportSelector | ‘_’) ‘}’
-ImportSelector    ::=  id [‘=>’ id | ‘=>’ ‘_’]
-Export            ::=  ‘export’ [‘implied’] ImportExpr {‘,’ ImportExpr}
-```
-
-### Declarations and Definitions
-```ebnf
-RefineDcl         ::=  ‘val’ ValDcl
-                    |  ‘def’ DefDcl
-                    |  ‘type’ {nl} TypeDcl
-Dcl               ::=  RefineDcl
-                    |  ‘var’ ValDcl
-ValDcl            ::=  ids ‘:’ Type
-DefDcl            ::=  DefSig [‘:’ Type]
-DefSig            ::=  ‘(’ DefParam ‘)’ [nl] id [DefTypeParamClause] {DefParamClause}
-TypeDcl           ::=  id [TypeParamClause] (SubtypeBounds | ‘=’ Type)
-                    |  id [TypeParamClause] <: Type = MatchType
-
-Def               ::=  ‘val’ PatDef
-                    |  ‘var’ VarDef
-                    |  ‘def’ DefDef
-                    |  ‘type’ {nl} TypeDcl
-                    |  ([‘case’] ‘class’ | ‘trait’) ClassDef
-                    |  [‘case’] ‘object’ ObjectDef
-                    |  ‘enum’ EnumDef
-                    |  ‘implied’ InstanceDef
-
-PatDef            ::=  Pattern2 {‘,’ Pattern2} [‘:’ Type] ‘=’ Expr
-VarDef            ::=  PatDef
-                    |  ids ‘:’ Type ‘=’ ‘_’
-DefDef            ::=  DefSig [(‘:’ | ‘<:’) Type] ‘=’ Expr
-                    |  ‘this’ DefParamClause {DefParamClause} ‘=’ ConstrExpr
-ClassDef          ::=  id ClassConstr [Template]=
-ClassConstr       ::=  [ClsTypeParamClause] [ConstrMods] {ClsParamClause}
-ConstrMods        ::=  {Annotation} [AccessModifier]
-ObjectDef         ::=  id [Template]
-EnumDef           ::=  id ClassConstr InheritClauses EnumBody
-InstanceDef       ::=  [id] InstanceParams InstanceBody
-InstanceParams    ::=  [DefTypeParamClause] {GivenParamClause}
-InstanceBody      ::=  [‘for’ ConstrApp {‘,’ ConstrApp }] [TemplateBody]
-                    |  ‘for’ Type ‘=’ Expr
-Template          ::=  InheritClauses [TemplateBody]
-InheritClauses    ::=  [‘extends’ ConstrApps] [‘derives’ QualId {‘,’ QualId}]
-ConstrApps        ::=  ConstrApp {‘,’ ConstrApp}
-ConstrApp         ::=  AnnotType {ArgumentExprs}
-ConstrExpr        ::=  SelfInvocation
-                    |  {’ SelfInvocation {semi BlockStat} ‘}’
-SelfInvocation    ::=  ‘this’ ArgumentExprs {ArgumentExprs}
-
-TemplateBody      ::=  [nl] ‘{’ [SelfType] TemplateStat {semi TemplateStat} ‘}’
-TemplateStat      ::=  Import
-                    |  Export
-                    |  {Annotation [nl]} {Modifier} Def
-                    |  {Annotation [nl]} {Modifier} Dcl
-                    |  Expr1
-                    |
-SelfType          ::=  id [‘:’ InfixType] ‘=>’
-                    |  ‘this’ ‘:’ InfixType ‘=>’
-
-EnumBody          ::=  [nl] ‘{’ [SelfType] EnumStat {semi EnumStat} ‘}’
-EnumStat          ::=  TemplateStat
-                    |  {Annotation [nl]} {Modifier} EnumCase
-EnumCase          ::=  ‘case’ (id ClassConstr [‘extends’ ConstrApps]] | ids)
-
-TopStatSeq        ::=  TopStat {semi TopStat}
-TopStat           ::=  Import
-                    |  Export
-                    |  {Annotation [nl]} {Modifier} Def
-                    |  Packaging
-                    |
-Packaging         ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
-
-CompilationUnit   ::=  {‘package’ QualId semi} TopStatSeq
-```
-*/
