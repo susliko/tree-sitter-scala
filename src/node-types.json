@@ -99,21 +99,6 @@
     }
   },
   {
-    "type": "arg_types",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "type",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "argument_exprs",
     "named": true,
     "fields": {},
@@ -1317,18 +1302,10 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
           "type": "fun_arg_type",
-          "named": true
-        },
-        {
-          "type": "infix_type",
-          "named": true
-        },
-        {
-          "type": "typed_fun_param",
           "named": true
         }
       ]
@@ -1353,6 +1330,52 @@
         },
         {
           "type": "id",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fun_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "fun_type_args",
+          "named": true
+        },
+        {
+          "type": "hk_type_param_clause",
+          "named": true
+        },
+        {
+          "type": "type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fun_type_args",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "fun_arg_types",
+          "named": true
+        },
+        {
+          "type": "fun_param_clause",
+          "named": true
+        },
+        {
+          "type": "infix_type",
           "named": true
         }
       ]
@@ -1865,7 +1888,15 @@
       "required": true,
       "types": [
         {
+          "type": "indent",
+          "named": true
+        },
+        {
           "type": "infix_type",
+          "named": true
+        },
+        {
+          "type": "outdent",
           "named": true
         },
         {
@@ -2574,6 +2605,25 @@
     }
   },
   {
+    "type": "simple_ref",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "class_qualifier",
+          "named": true
+        },
+        {
+          "type": "id",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "simple_type",
     "named": true,
     "fields": {},
@@ -2582,9 +2632,32 @@
       "required": false,
       "types": [
         {
-          "type": "arg_types",
+          "type": "lower_bound",
           "named": true
         },
+        {
+          "type": "simple_literal",
+          "named": true
+        },
+        {
+          "type": "simple_type1",
+          "named": true
+        },
+        {
+          "type": "upper_bound",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "simple_type1",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
         {
           "type": "block_stat",
           "named": true
@@ -2598,7 +2671,7 @@
           "named": true
         },
         {
-          "type": "path",
+          "type": "pattern",
           "named": true
         },
         {
@@ -2610,15 +2683,11 @@
           "named": true
         },
         {
-          "type": "simple_literal",
+          "type": "simple_type1",
           "named": true
         },
         {
-          "type": "simple_type",
-          "named": true
-        },
-        {
-          "type": "stable_id",
+          "type": "singleton",
           "named": true
         },
         {
@@ -2627,6 +2696,37 @@
         },
         {
           "type": "type_args",
+          "named": true
+        },
+        {
+          "type": "types",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "singleton",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "id",
+          "named": true
+        },
+        {
+          "type": "simple_literal",
+          "named": true
+        },
+        {
+          "type": "simple_ref",
+          "named": true
+        },
+        {
+          "type": "singleton",
           "named": true
         }
       ]
@@ -2941,7 +3041,11 @@
       "required": true,
       "types": [
         {
-          "type": "fun_arg_types",
+          "type": "fun_param_clause",
+          "named": true
+        },
+        {
+          "type": "fun_type",
           "named": true
         },
         {
@@ -2972,16 +3076,11 @@
       "required": true,
       "types": [
         {
-          "type": "arg_types",
+          "type": "types",
           "named": true
         }
       ]
     }
-  },
-  {
-    "type": "type_bounds",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "type_case_clause",
@@ -3038,15 +3137,19 @@
           "named": true
         },
         {
+          "type": "lower_bound",
+          "named": true
+        },
+        {
           "type": "type",
           "named": true
         },
         {
-          "type": "type_bounds",
+          "type": "type_param_clause",
           "named": true
         },
         {
-          "type": "type_param_clause",
+          "type": "upper_bound",
           "named": true
         }
       ]
@@ -3058,17 +3161,13 @@
     "fields": {}
   },
   {
-    "type": "typed_fun_param",
+    "type": "types",
     "named": true,
     "fields": {},
     "children": {
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "id",
-          "named": true
-        },
         {
           "type": "type",
           "named": true
@@ -3317,6 +3416,10 @@
     "named": false
   },
   {
+    "type": "=>>",
+    "named": false
+  },
+  {
     "type": ">",
     "named": false
   },
@@ -3326,6 +3429,10 @@
   },
   {
     "type": "?",
+    "named": false
+  },
+  {
+    "type": "?=>",
     "named": false
   },
   {

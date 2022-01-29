@@ -236,59 +236,77 @@ module.exports = grammar({
 
     // Types
     type: $ => choice(
-      seq(repeat(choice('erased', 'given')), $.fun_arg_types, '=>', $.type),
-      seq($.hk_type_param_clause, '=>', $.type),
+      $.fun_type,
+      seq($.hk_type_param_clause, '=>>', $.type),
+      seq($.fun_param_clause, '=>>', $.type),
       $.match_type,
       $.infix_type
     ),
-
-    fun_arg_types: $ => choice(
-      $.infix_type,
-      seq('(', optional(seq($.fun_arg_type, repeat(seq(',', $.fun_arg_type)))), ')'),
-      seq('(', $.typed_fun_param, repeat(seq(',', $.typed_fun_param)), ')')
+    fun_type: $ => choice(
+      seq($.fun_type_args, choice('=>', '?=>'), $.type),
+      seq($.hk_type_param_clause, '=>', $.type)
     ),
+    fun_type_args: $ => choice(
+      $.infix_type,
+      seq('(', optional($.fun_arg_types), ')'),
+      $.fun_param_clause
+    ),
+    fun_param_clause: $ => seq('(', $.typed_fun_param, repeat(seq(',', $.typed_fun_param)), ')'),
     typed_fun_param: $ => seq($.id, ':', $.type),
-    match_type: $ => seq($.infix_type, 'match', $.type_case_clauses),
+    match_type: $ => seq($.infix_type, 'match', block($.type_case_clauses, $)),
     infix_type: $ => seq($.refined_type, repeat(seq($.id, optional($.nl), $.refined_type))),
     refined_type: $ => seq($.annot_type, repeat(seq(optional($.nl), $.refinement))),
     annot_type: $ => seq($.simple_type, repeat($.annotation)),
+
     simple_type: $ => choice(
-      seq($.simple_type, $.type_args),
-      seq($.simple_type, '#', $.id),
-      $.stable_id,
-      seq($.path, '.', 'type'),
-      seq('(', $.arg_types, ')'),
-      seq(
-        '_',
-        seq(optional(seq('>:', $.type)), optional(seq('<:', $.type))) // subtype_bounds rule
-      ),
-      $.refinement,
       $.simple_literal,
-      seq('$', '{',
+      seq(
+        '?', 
+        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
+      ),
+      $.simple_type1
+    ),
+    simple_type1: $ => choice(
+      $.id,
+      seq($.singleton, '.', $.id),
+      seq($.singleton, '.', $.type),
+      seq('(', $.types, ')'),
+      $.refinement,
+      seq('$', '{', 
         seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
         '}'),
+      seq('$', '{', $.pattern, '}'), // only inside quoted pattern
+      seq($.simple_type1, $.type_args),
+      seq($.simple_type1, '#', $.id)
     ),
-    arg_types: $ => seq($.type, repeat(seq(',', $.type))),
+    singleton: $ => choice(
+      $.simple_ref,
+      $.simple_literal,
+      seq($.singleton, '.', $.id),
+      seq($.singleton, repeat(seq(',', $.singleton)))
+    ),
+    singletons: $ => seq($.singleton, repeat(seq(',', $.singleton))),
     fun_arg_type: $ => choice($.type, seq('=>', $.type)),
+    fun_arg_types: $ => seq($.fun_arg_type, repeat(seq(',', $.fun_arg_type))),
     param_type: $ => seq(optional('=>'), $.param_value_type),
     param_value_type: $ => seq($.type, optional('*')),
-    type_args: $ => seq('[', $.arg_types, ']'),
+    type_args: $ => seq('[', $.types, ']'),
     refinement: $ => seq('{', optional($.refine_dcl), repeat(seq($.semi, optional($.refine_dcl))), '}'),
     // This rule is inlined since it matches empty string.
-    // subtype_bounds: $ => seq(
-    //   optional(seq('>:', $.type)),
-    //   optional(seq('<:', $.type)),
+    // type_bounds: $ => seq(
+    //   optional($.lower_bound),
+    //   optional($.upper_bound),
     // ),
 
     // This rule is inlined since it matches empty string.
     // type_param_bounds: $ => seq(
-    //   seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+    //   seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
     //   repeat($.contex_bound)
     // ),
-
     lower_bound: $ => seq('>:', $.type),
     upper_bound: $ => seq('<:', $.type),
     contex_bound: $ => seq(':', $.type),
+    types: $ => seq($.type, repeat(seq(',', $.type))),
 
     // Expressions
 
@@ -432,7 +450,7 @@ module.exports = grammar({
       $.id,
       optional($.hk_type_param_clause),
       seq(
-        seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
         repeat($.contex_bound)
       ) // type_param_bounds rule
     ),
@@ -443,7 +461,7 @@ module.exports = grammar({
       $.id,
       optional($.hk_type_param_clause),
       seq(
-        seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
         repeat($.contex_bound)
       ) // type_param_bounds rule
     ),
@@ -453,7 +471,7 @@ module.exports = grammar({
       repeat($.annotation),
       $.id,
       optional($.hk_type_param_clause),
-      seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
     ),
 
     hk_type_param_clause: $ => seq('[', $.hk_type_param, repeat(seq(',', $.hk_type_param)), ']'),
@@ -462,7 +480,7 @@ module.exports = grammar({
       repeat($.annotation),
       optional(choice('+', '-')),
       choice(seq($.id, optional($.hk_type_param_clause)),'_') ,
-      seq(optional($.lower_bound), optional($.upper_bound)), // subtype_bounds rule
+      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
     ),
 
     cls_param_clause: $ => choice(
@@ -547,7 +565,7 @@ module.exports = grammar({
       $.id,
       optional($.type_param_clause),
       repeat($.fun_param_clause),
-      $.type_bounds,
+      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
       optional(seq('=', $.type))
     ),
     def: $ => choice(
@@ -720,7 +738,6 @@ module.exports = grammar({
     def_param_clauses: _ => 'aaaa',
     type_param_clause: _ => 'aaaa',
     fun_param_clause: _ => 'aaaa',
-    type_bounds: _ => 'aaaa',
     using_param_clause: _ => 'aaaa',
     cls_param_clauses: _ => 'aaaa',
     def_param_clauses: _ => 'aaaa',
