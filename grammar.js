@@ -14,10 +14,44 @@ const block_body = (rule, $) => {
   )
 }
 
+// Rules that match empty string
+const idrest = $ =>  seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op)))
+
+const inherit_clauses = $ => seq(
+  optional(seq('extends', $.constr_apps)),
+  optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
+)
+
+const template = $ => seq(
+  inherit_clauses($),
+  optional($.template_body)
+)
+
+const constr_mods = $ => seq(repeat($.annotation), optional($.access_modifier))
+
+const class_constr = $ => seq(
+  optional($.cls_type_param_clause), 
+  optional(constr_mods($)),
+  cls_param_clauses($)
+)
+const type_bounds = $ => seq(optional($.lower_bound), optional($.upper_bound))
+
+const type_param_bounds = $ => seq(type_bounds($), repeat($.contex_bound))
+
+const def_param_clauses = $ => seq(
+  repeat($.def_param_clause), 
+  optional(seq(optional($.nl), '(', optional('implicit'), $.def_params, ')'))
+)
+
+
+const cls_param_clauses = $ => seq(
+  repeat($.cls_param_clause),
+  optional(seq(optional($.nl), '(', optional('implicit'), $.cls_params, ')'))
+)
+
+
 module.exports = grammar({
   name: 'scala',
-
-  inline: $ => [ $.type_param_bounds ],
 
   rules: {
     source_file: _ => 'hello',
@@ -44,16 +78,8 @@ module.exports = grammar({
     char_escape_seq: _ => seq('\\', choice('b', 't', 'n', 'f', 'r', '"', "'", '\\')),
 
     op: $ => seq($.opchar, repeat($.opchar)),
-    varid: $ => seq(
-      $.lower,
-      seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), // idrest rule
-    ),
-    alphaid: $ => choice(
-      seq(
-        $.upper,
-        seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), // idrest rule
-      ),
-      $.varid),
+    varid: $ => seq($.lower, idrest($)),
+    alphaid: $ => choice(seq($.upper, idrest($)), $.varid),
     plainid: $ => choice($.alphaid, $.op),
     id: $ => choice(
       $.plainid,
@@ -65,8 +91,6 @@ module.exports = grammar({
           $.char_escape_seq)),
         '`')
     ),
-    // idrest: $ =>  seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), Need to inline this rule
-    // TODO think about moving this rule to a different object so it can match empty string
     quote_id: $ => seq("'", $.alphaid),
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
@@ -260,10 +284,7 @@ module.exports = grammar({
 
     simple_type: $ => choice(
       $.simple_literal,
-      seq(
-        '?', 
-        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
-      ),
+      seq('?', type_bounds($)),
       $.simple_type1
     ),
     simple_type1: $ => choice(
@@ -292,17 +313,7 @@ module.exports = grammar({
     param_value_type: $ => seq($.type, optional('*')),
     type_args: $ => seq('[', $.types, ']'),
     refinement: $ => seq('{', optional($.refine_dcl), repeat(seq($.semi, optional($.refine_dcl))), '}'),
-    // This rule is inlined since it matches empty string.
-    // type_bounds: $ => seq(
-    //   optional($.lower_bound),
-    //   optional($.upper_bound),
-    // ),
 
-    // This rule is inlined since it matches empty string.
-    // type_param_bounds: $ => seq(
-    //   seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
-    //   repeat($.contex_bound)
-    // ),
     lower_bound: $ => seq('>:', $.type),
     upper_bound: $ => seq('<:', $.type),
     contex_bound: $ => seq(':', $.type),
@@ -492,10 +503,7 @@ module.exports = grammar({
       optional(choice('+', '-')),
       $.id,
       optional($.hk_type_param_clause),
-      seq(
-        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
-        repeat($.contex_bound)
-      ) // type_param_bounds rule
+      type_param_bounds($),
     ),
 
     def_type_param_clause: $ => seq('[', $.def_type_param, repeat(seq(',', $.def_type_param)), ']'),
@@ -503,10 +511,7 @@ module.exports = grammar({
       repeat($.annotation),
       $.id,
       optional($.hk_type_param_clause),
-      seq(
-        seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
-        repeat($.contex_bound)
-      ) // type_param_bounds rule
+      type_param_bounds($)
     ),
 
     typ_type_param_clause: $ => seq('[', $.typ_type_param, repeat(seq(',', $.typ_type_param)), ']'),
@@ -514,7 +519,7 @@ module.exports = grammar({
       repeat($.annotation),
       $.id,
       optional($.hk_type_param_clause),
-      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
+      type_bounds($),
     ),
 
     hk_type_param_clause: $ => seq('[', $.hk_type_param, repeat(seq(',', $.hk_type_param)), ']'),
@@ -523,13 +528,9 @@ module.exports = grammar({
       repeat($.annotation),
       optional(choice('+', '-')),
       choice(seq($.id, optional($.hk_type_param_clause)),'_') ,
-      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
+      type_bounds($)
     ),
 
-    cls_param_clauses: $ => seq(
-      repeat($.cls_param_clause),
-      opnional(seq(optional($.nl), '(', optional('implicit'), $.cls_params, ')'))
-    ),
     cls_param_clause: $ => choice(
       seq(optional($.nl), '(', $.cls_params, ')'),
       seq(optional($.nl), '(', 'using', choice($.cls_params, $.fun_arg_types), ')')
@@ -548,15 +549,11 @@ module.exports = grammar({
     param: $ => seq($.id, ':', $.param_type, optional(seq('=', $.expr))),
 
 
-    def_param_clauses: $ => seq(
-      repeat($.def_param_clause), 
-      optional(seq(optional($.nl), '(', optional('implicit'), $.def_params, ')'))
-    ),
-    def_param_clause: $ => choise(
+    def_param_clause: $ => choice(
       seq(optional($.nl), '(', $.def_params, ')'),
       $.using_param_clause
     ),
-    using_param_clause: $ => seq(optional($.nl), '(', 'using', choise($.def_params, $.fun_arg_types), ')'),
+    using_param_clause: $ => seq(optional($.nl), '(', 'using', choice($.def_params, $.fun_arg_types), ')'),
 
     def_param_clause: $ => choice(
       seq(
@@ -634,12 +631,12 @@ module.exports = grammar({
     val_dcl: $ => seq($.ids, ':', $.type),
     var_dcl: $ => seq($.ids, ':', $.type),
     def_dcl: $ => seq($.def_sig, ':', $.type),
-    def_sig: $ => seq($.id, optional($.def_type_param_clause), $.def_param_clauses),
+    def_sig: $ => seq($.id, optional($.def_type_param_clause), def_param_clauses($)),
     type_dcl: $ => seq(
       $.id,
       optional($.type_param_clause),
       repeat($.fun_param_clause),
-      seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
+      type_bounds($),
       optional(seq('=', $.type))
     ),
     def: $ => choice(
@@ -656,7 +653,7 @@ module.exports = grammar({
     ),
     def_def: $ => choice(
       seq($.def_sig, optional(seq(':', $.type)), '=', $.expr),
-      seq('this', $.def_param_clause, $.def_param_clauses, '=', $.constr_expr)
+      seq('this', $.def_param_clause, def_param_clauses($), '=', $.constr_expr)
     ),
     tmpl_def: $ => choice(
       seq(choice(seq(optional('case'), 'class'), 'trait'), $.class_def),
@@ -667,39 +664,17 @@ module.exports = grammar({
 
     class_def: $ => seq(
       $.id, 
-      $.class_constr, 
-      optional(seq(
-        seq(
-          optional(seq('extends', $.constr_apps)), 
-          optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
-        ), // inherit_clauses rule
-        optional($.template_body)
-      )), // optional(template) rule
+      class_constr($), 
+      optional(template($)),
     ),
-    class_constr: $ => seq(
-      optional($.cls_type_param_clause), 
-      optional(seq(repeat($.annotation), optional($.access_modifier))), // optional(constr_mods) rule
-      $.cls_param_clauses
-    ),
-    // This rule is inlined since it matches an empty string
-    // constr_mods: $ => seq(repeat($.annotation), optional($.access_modifier)),
     object_def: $ => seq(
       $.id, 
-      optional(seq(
-        seq(
-          optional(seq('extends', $.constr_apps)), 
-          optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
-        ), // inherit_clauses rule
-        optional($.template_body)
-      )), // optional(template) rule
+      optional(template($)),
     ),
     enum_def: $ => seq(
       $.id, 
-      $.class_constr, 
-      seq(
-        optional(seq('extends', $.constr_apps)), 
-        optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
-      ), // inherit_clauses rule
+      class_constr($), 
+      inherit_clauses($),
       $.enum_body),
     given_def: $ => seq(
       optional($.given_sig), 
@@ -724,19 +699,6 @@ module.exports = grammar({
       seq(optional($.nl), block(seq($.ext_method, repeat(seq($.semi, $.ext_method))), $))
     ),
     ext_method: $ => seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), 'def', $.def_def),
-    // This rule is inlined since it matches an empty string
-    // template: $ => seq(
-    //   seq(
-    //     optional(seq('extends', $.constr_apps)), 
-    //     optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
-    //   ), // inherit_clauses rule
-    //   optional($.template_body)
-    // ),
-    // This rule is inlined since it matches an emtpy string
-    // inherit_clauses: $ => seq(
-    //   optional(seq('extends', $.constr_apps)), 
-    //   optional(seq('derives', $.qual_id, repeat(seq(',', $.qual_id)))),
-    // ),
     constr_apps: $ => seq(
       $.constr_app, 
       choice(repeat(seq(',', $.constr_app)), repeat(seq('with', $.constr_app)))
@@ -778,7 +740,7 @@ module.exports = grammar({
     enum_case: $ => seq(
       'case', 
       choice(
-        seq($.id, $.class_constr, optional(seq('extends', $.constr_apps))), 
+        seq($.id, class_constr($), optional(seq('extends', $.constr_apps))), 
         $.ids
       )
     ),
@@ -801,29 +763,14 @@ module.exports = grammar({
 
 
 
-    // FIXME(daddy) This rules will be later in the grammar.
-    refine_dcl: _ => 'refine_dcl',
+    // FIXME(daddy) This rules are not in the grammar
     xml_pattern: _ => 'xml',
     xml_expr: _ => 'xml',
-    constr_app: _ => 'constr_app',
-    quoted_id: _ => 'quoted_id',
-    postfix_expr: _ => 'postfx',
-    modifier: _ => 'mod',
-    def_param_clauses: _ => 'aaaa',
     type_param_clause: _ => 'aaaa',
-    fun_param_clause: _ => 'aaaa',
-    using_param_clause: _ => 'aaaa',
-    cls_param_clauses: _ => 'aaaa',
-    def_param_clauses: _ => 'aaaa',
+
+    // TODO indents as external scanner
     indent: _ => 'aaaa',
     outdent: _ => 'aaaa',
-    def_param_clauses: _ => 'aaaa',
-    end_marker: _ => 'aaaa',
-    def_param_clauses: _ => 'aaaa',
-    path: _ => 'aaa',
-    stable_id: _ => 'aaa',
-
-
   }
 });
 
