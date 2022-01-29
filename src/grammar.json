@@ -1403,6 +1403,10 @@
           "name": "processed_string_literal"
         },
         {
+          "type": "SYMBOL",
+          "name": "symbol_literal"
+        },
+        {
           "type": "STRING",
           "value": "null"
         }
@@ -1458,12 +1462,12 @@
         }
       ]
     },
-    "path": {
+    "simple_ref": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "stable_id"
+          "name": "id"
         },
         {
           "type": "SEQ",
@@ -1492,32 +1496,6 @@
             {
               "type": "STRING",
               "value": "this"
-            }
-          ]
-        }
-      ]
-    },
-    "stable_id": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "id"
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "path"
-            },
-            {
-              "type": "STRING",
-              "value": "."
-            },
-            {
-              "type": "SYMBOL",
-              "name": "id"
             }
           ]
         },
@@ -7276,6 +7254,14 @@
     "end_marker": {
       "type": "STRING",
       "value": "aaaa"
+    },
+    "path": {
+      "type": "STRING",
+      "value": "aaa"
+    },
+    "stable_id": {
+      "type": "STRING",
+      "value": "aaa"
     }
   },
   "extras": [

@@ -220,17 +220,17 @@ module.exports = grammar({
       $.string_literal
     ),
 
-    literal: $ => choice($.simple_literal, $.processed_string_literal, 'null'),
+    literal: $ => choice($.simple_literal, $.processed_string_literal, $.symbol_literal, 'null'),
 
     qual_id: $ => seq($.id, repeat(seq('.', $.id))),
     ids: $ => seq($.id, repeat(seq(',', $.id))),
 
-    path: $ => choice($.stable_id, seq(optional(seq($.id, '.')), 'this')),
-    stable_id: $ => choice(
+    simple_ref: $ => choice(
       $.id,
-      seq($.path, '.', $.id),
+      seq(optional(seq($.id, '.')), 'this'),
       seq(optional(seq($.id, '.')), 'super', optional($.class_qualifier), '.', $.id)
     ),
+
     class_qualifier: $ => seq('[', $.id, ']'),
 
 
@@ -729,6 +729,8 @@ module.exports = grammar({
     def_param_clauses: _ => 'aaaa',
     end_marker: _ => 'aaaa',
     def_param_clauses: _ => 'aaaa',
+    path: _ => 'aaa',
+    stable_id: _ => 'aaa',
 
 
   }
