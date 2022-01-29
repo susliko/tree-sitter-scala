@@ -4556,6 +4556,10 @@
         }
       ]
     },
+    "cls_param_clauses": {
+      "type": "STRING",
+      "value": "aaaa"
+    },
     "cls_param_clause": {
       "type": "CHOICE",
       "members": [
@@ -4575,32 +4579,12 @@
               ]
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "erased"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            },
-            {
               "type": "STRING",
               "value": "("
             },
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "cls_params"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "cls_params"
             },
             {
               "type": "STRING",
@@ -4612,15 +4596,11 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "STRING",
-              "value": "given"
-            },
-            {
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "erased"
+                  "type": "SYMBOL",
+                  "name": "nl"
                 },
                 {
                   "type": "BLANK"
@@ -4628,30 +4608,29 @@
               ]
             },
             {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "STRING",
+              "value": "using"
+            },
+            {
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "("
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "cls_params"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": ")"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "cls_params"
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "given_types"
+                  "name": "fun_arg_types"
                 }
               ]
+            },
+            {
+              "type": "STRING",
+              "value": ")"
             }
           ]
         }
@@ -4778,6 +4757,10 @@
         }
       ]
     },
+    "def_param_clauses": {
+      "type": "STRING",
+      "value": "aaaa"
+    },
     "def_param_clause": {
       "type": "CHOICE",
       "members": [
@@ -4835,6 +4818,10 @@
           "name": "given_param_clause"
         }
       ]
+    },
+    "using_param_clause": {
+      "type": "STRING",
+      "value": "aaaa"
     },
     "given_param_clause": {
       "type": "SEQ",
@@ -7539,19 +7526,7 @@
       "type": "STRING",
       "value": "postfx"
     },
-    "def_param_clauses": {
-      "type": "STRING",
-      "value": "aaaa"
-    },
     "type_param_clause": {
-      "type": "STRING",
-      "value": "aaaa"
-    },
-    "using_param_clause": {
-      "type": "STRING",
-      "value": "aaaa"
-    },
-    "cls_param_clauses": {
       "type": "STRING",
       "value": "aaaa"
     },

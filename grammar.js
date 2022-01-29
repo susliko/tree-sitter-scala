@@ -443,6 +443,7 @@ module.exports = grammar({
     ),
 
     // Type and Value Parameters
+
     cls_type_param_clause: $ => seq('[', $.cls_type_param, repeat(seq(',', $.cls_type_param)), ']'),
     cls_type_param: $ => seq(
       repeat($.annotation),
@@ -476,17 +477,22 @@ module.exports = grammar({
 
     hk_type_param_clause: $ => seq('[', $.hk_type_param, repeat(seq(',', $.hk_type_param)), ']'),
 
-    hk_type_param: $ => seq( // TODO in the original rule was Id not id
+    hk_type_param: $ => seq(
       repeat($.annotation),
       optional(choice('+', '-')),
       choice(seq($.id, optional($.hk_type_param_clause)),'_') ,
       seq(optional($.lower_bound), optional($.upper_bound)), // type_bounds rule
     ),
 
-    cls_param_clause: $ => choice(
-      seq(optional($.nl), optional('erased'), '(', optional($.cls_params), ')'),
-      seq('given', optional('erased'), choice(seq('(', $.cls_params, ')'), $.given_types))
+    cls_param_clauses: $ => seq(
+      repeat($.cls_param_clause),
+      opnional(seq(optional($.nl), '(', optional('implicit'), $.cls_params, ')'))
     ),
+    cls_param_clause: $ => choice(
+      seq(optional($.nl), '(', $.cls_params, ')'),
+      seq(optional($.nl), '(', 'using', choice($.cls_params, $.fun_arg_types), ')')
+    ),
+
     cls_params: $ => seq($.cls_param, repeat(seq(',', $.cls_param))),
     cls_param: $ => seq(
       repeat($.annotation),
@@ -499,6 +505,16 @@ module.exports = grammar({
 
     param: $ => seq($.id, ':', $.param_type, optional(seq('=', $.expr))),
 
+
+    def_param_clauses: $ => seq(
+      repeat($.def_param_clause), 
+      optional(seq(optional($.nl), '(', optional('implicit'), $.def_params, ')'))
+    ),
+    def_param_clause: $ => choise(
+      seq(optional($.nl), '(', $.def_params, ')'),
+      $.using_param_clause
+    ),
+    using_param_clause: $ => seq(optional($.nl), '(', 'using', choise($.def_params, $.fun_arg_types), ')'),
 
     def_param_clause: $ => choice(
       seq(

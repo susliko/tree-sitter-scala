@@ -3805,6 +3805,10 @@
     "named": true
   },
   {
+    "type": "using",
+    "named": false
+  },
+  {
     "type": "val",
     "named": false
   },
