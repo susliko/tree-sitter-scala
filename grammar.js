@@ -67,7 +67,7 @@ module.exports = grammar({
     ),
     // idrest: $ =>  seq(repeat(choice($.letter, $.digit)), optional(seq('_', $.op))), Need to inline this rule
     // TODO think about moving this rule to a different object so it can match empty string
-    quoteId: $ => seq("'", $.alphaid),
+    quote_id: $ => seq("'", $.alphaid),
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
     decimal_numeral: $ => choice(
@@ -176,7 +176,7 @@ module.exports = grammar({
       seq('$', $.letter, repeat(choice($.letter, $.digit))),
       seq(
         '{',
-        seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
         optional(seq(
           ';',
           $.white_space,
@@ -273,7 +273,7 @@ module.exports = grammar({
       seq('(', $.types, ')'),
       $.refinement,
       seq('$', '{', 
-        seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
         '}'),
       seq('$', '{', $.pattern, '}'), // only inside quoted pattern
       seq($.simple_type1, $.type_args),
@@ -311,93 +311,141 @@ module.exports = grammar({
     // Expressions
 
     expr: $ => choice(
-      seq(optional('given'), optional('erased'), $.fun_params, '=>', $.expr),
+      seq($.fun_params, choice('=>', '?=>'), $.expr),
+      seq($.hk_type_param_clause, '=>', $.expr),
+      $.expr1
+    ),
+    block_result: $ => choice(
+      seq(
+        $.fun_params, 
+        choice('=>', '?=>'), 
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+      ),
+      seq(
+        $.hk_type_param_clause, 
+        '=>', 
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+      ),
       $.expr1
     ),
     fun_params: $ => choice($.bindings, $.id, '_'),
+
     expr1: $ => choice(
-      seq('if', $.expr, 'then', $.expr, optional(seq(optional($.semi), 'else', $.expr))),
+      seq(
+        optional('inline'), 'if', '(', $.expr, ')', repeat($.nl), 
+        $.expr, 
+        optional(seq((optional($.semi), 'else', $.expr)))
+      ),
+      seq(optional('inline'), 'if',  $.expr, 'then',
+        $.expr, 
+        optional(seq(optional($.semi), 'else', $.expr))
+      ),
+      seq('while', '(', $.expr, ')', repeat($.nl), $.expr),
       seq('while', $.expr, 'do', $.expr),
-      seq('try', $.expr, 'catch', $.expr, optional(seq('finally', $.expr))),
-      seq('try', $.expr, 'finally', $.expr),
+      seq('try', $.expr, $.catches, optional(seq('finally', $.expr))),
+      seq('try', $.expr, optional(seq('finally', $.expr))),
       seq('throw', $.expr),
       seq('return', optional($.expr)),
-      seq('for', $.enumerators, choice('do', 'yield'), $.expr),
+      seq($.for_expr),
       seq(optional(seq($.simple_expr, '.')), $.id, '=', $.expr),
-      seq($.simple_expr1, $.argument_exprs, '=', $.expr),
-      seq($.infix_expr, optional($.ascription)),
-      seq(optional('inline'), $.infix_expr, 'match', '{', $.case_clauses, '}'),
-      seq('implied', 'match', '{', $.implied_case_clauses, '}'),
+      seq($.prefix_operator, $.simple_expr, '=', $.expr),
+      seq($.simple_expr, $.argument_exprs, '=', $.expr),
+      seq($.postfix_expr, optional($.ascription)),
+      seq('inline', $.infix_expr, $.match_clause),
     ),
+
     ascription: $ => choice(
       seq(':', $.infix_type),
       seq(':', $.annotation, repeat($.annotation))
     ),
+    catches: $ => seq('catch', choice($.expr, $.expr_case_clause)),
+
+    postfix_expr: $ => seq($.infix_expr, optional($.id)),
     infix_expr: $ => choice(
       $.prefix_expr,
       seq($.infix_expr, $.id, optional($.nl), $.infix_expr),
-      seq($.infix_expr, 'given', choice($.infix_expr, $.par_argument_exprs))
+      seq($.infix_expr, $.id, ':', $.indented_expr),
+      seq($.infix_expr, $.match_clause),
     ),
-    prefix_expr: $ => seq(choice('-', '+', '~', '!'), $.simple_expr),
+    match_clause: $ => seq('match', block($.case_clauses, $)),
+    prefix_expr: $ => seq(optional($.prefix_operator), $.simple_expr),
+    prefix_operator: _ => choice('-', '+', '~', '!'),
 
     simple_expr: $ => choice(
-      seq('new', choice(seq($.constr_app, optional($.template_body)), $.template_body)),
+      $.simple_ref,
+      $.literal,
+      '_',
       $.block_expr,
       seq('$', '{',
-        seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
-        '}'),
-      $.quoted,
-      $.quoted_id, // only inside splices
-      $.simple_expr1
-    ),
-    simple_expr1: $ => choice(
-      $.literal,
-      $.path,
-      '_',
-      seq('(', $.exprs_in_parens, ')'),
-      seq($.simple_expr, '.', $.id),
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+        '}'), // TODO comment in grammar: unless inside quoted pattern
+      seq('$', '{', $.pattern, '}'), // TODO comment in grammar: only inside quoted pattern
+      seq($.quoted),
+      seq($.quote_id), // TODO comment in grammar: only inside splices
+      seq('new', $.constr_app, repeat(seq('with', $.constr_app)), optional($.template_body)),
+      seq('new', $.template_body),
+      seq($.simple_expr, '.', $.match_clause),
       seq($.simple_expr, $.type_args),
-      seq($.simple_expr1, $.argument_exprs),
-      $.xml_expr // TODO wtf?
+      seq($.simple_expr, $.argument_exprs),
+      seq($.simple_expr, ':', $.indented_expr), // TODO under language.experimental.fewer_braces
+      seq($.simple_expr, $.fun_params, choice('=>', '?>'), $.indented_expr), // TODO under language.experimental.fewer_braces
+      seq($.simple_expr, '_'),
+      $.xml_expr // TODO to be dropped
+    ),
+ 
+    indented_expr: $ => seq(
+      $.indent, 
+      choice(
+        $.case_clauses, 
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+      ),
+      $.outdent
     ),
     quoted: $ => choice(
       seq("'", '{',
-        seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
         '}'),
       seq("'", '[', $.type, ']')
     ),
     exprs_in_parens: $ => seq($.expr_in_parens, repeat(seq(',', $.expr_in_parens))),
-    expr_in_parens: $ => choice(seq($.infix_expr, ':', $.type), $.expr),
-    par_argument_exprs: $ => choice(
-      seq('(', $.exprs_in_parens, ')'),
-
-      // TODO what is it in the end?
-      seq('(', optional(seq($.exprs_in_parens, ',')), $.infix_expr, ':', '_', '*', ')')
+    expr_in_parens: $ => choice(
+      seq($.postfix_expr, ':', $.type), // normal Expr allows only RefinedType here
+      $.expr
     ),
-    argument_exprs: $ => choice($.par_argument_exprs, seq(optional($.nl), $.block_expr)),
-    block_expr: $ => seq(
-      '{',
-      choice(
+    par_argument_exprs: $ => choice(
+      seq('(', optional('using'), $.exprs_in_parens, ')'),
+      seq('(', optional(seq($.exprs_in_parens, ',')), $.postfix_expr, '*', ')')
+    ),
+    argument_exprs: $ => choice($.par_argument_exprs, $.block_expr),
+
+    block_expr: $ => block(choice(
         $.case_clauses,
-        seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
-      ),
-      '}'),
+        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+      ), $),
 
     // This rule is inlined since it matches empty string TODO seems that first block_stat is mandatory
-    // block: $ => seq(repeat(seq($.block_stat, $.semi)), optional($.expr)),
+    // block: $ => seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
     block_stat: $ => choice(
       $.import,
       seq(repeat(seq($.annotation, optional($.nl))), repeat($.local_modifier), $.def),
-      $.expr1
+      $.extension,
+      $.expr1,
+      $.end_marker
     ),
+    for_expr: $ => choice(
+      seq('for', '(', $.enumerators0, ')', repeat($.nl), optional(choice('do', 'yield')), $.expr),
+      seq('for', '{', $.enumerators0, '}', repeat($.nl), optional(choice('do', 'yield')), $.expr),
+      seq('for',      $.enumerators0,                             choice('do', 'yield'),  $.expr)
+    ),
+    enumerators0: $ => seq(repeat($.nl), $.enumerators, optional($.semi)),
 
     enumerators: $ => seq($.generator, repeat(choice(seq($.semi, $.enumerator), $.guard))),
     enumerator: $ => choice(
       $.generator,
-      $.guard,
+      seq($.guard, repeat($.guard)),
       seq($.pattern1, '=', $.expr)
     ),
-    generator: $ => seq($.pattern1, '<-', $.expr),
+    generator: $ => seq(optional('case'), $.pattern1, '<-', $.expr),
     guard: $ => seq('if', $.postfix_expr),
 
 
@@ -407,39 +455,33 @@ module.exports = grammar({
       $.pattern,
       optional($.guard),
       '=>',
-      seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
+      seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
     ),
-    implied_case_clauses: $ => seq($.implied_case_clause, repeat($.implied_case_clause)),
-    implied_case_clause: $ => seq(
-      'case',
-      $.pat_var,
-      optional(seq(':', $.refined_type)),
-      optional($.guard),
-      '=>',
-      seq(repeat(seq($.block_stat, $.semi)), optional($.expr)), // block rule
-    ),
+    expr_case_clause: $ => seq('case', $.pattern, optional($.guard), '=>', $.expr),
     type_case_clauses: $ => seq($.type_case_clause, repeat($.type_case_clause)),
-    type_case_clause: $ => seq('case', $.infix_type, '=>', $.type, optional($.nl)),
+    type_case_clause: $ => seq('case', choice($.infix_type, '_'), '=>', $.type, optional($.semi)),
     pattern: $ => seq($.pattern1, repeat(seq('|', $.pattern1))),
-    pattern1: $ => choice(seq($.pat_var, ':', $.refined_type), $.pattern2),
+    pattern1: $ => seq($.pattern2, optional(seq(':', $.refined_type))),
     pattern2: $ => seq(optional(seq($.id, '@')), $.infix_pattern),
     infix_pattern: $ => seq($.simple_pattern, repeat(seq($.id, optional($.nl), $.simple_pattern))),
+
     simple_pattern: $ => choice(
       $.pat_var,
       $.literal,
       seq('(', optional($.patterns), ')'),
       $.quoted,
-      $.xml_pattern, // TODO
-      seq($.simple_pattern1, optional($.type_args), optional($.argument_patterns))
+      $.xml_pattern, // to be dropped
+      seq($.simple_pattern1, optional($.type_args), optional($.argument_patterns)),
+      seq('given', $.refined_type)
     ),
-    simple_pattern1: $ => choice($.path, seq($.simple_pattern1, '.', $.id)),
+    simple_pattern1: $ => choice($.simple_ref, seq($.simple_pattern1, '.', $.id)),
 
     pat_var: $ => choice($.varid, '_'),
     patterns: $ => seq($.pattern, repeat(seq(',', $.pattern))),
 
     argument_patterns: $ => choice(
       seq('(', optional($.patterns), ')'),
-      seq('(', optional(seq($.patterns, ',')), $.pattern2, ':', '_', '*', ')')
+      seq('(', optional(seq($.patterns, ',')), $.pat_var, ':', '_', '*', ')')
     ),
 
     // Type and Value Parameters
