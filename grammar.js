@@ -1,4 +1,12 @@
 // https://github.com/lampepfl/dotty/blob/d871d35b91ea9a56341676921df14c60dee62ac7/docs/docs/internals/syntax.md
+const white_space = /[ \t\r\n]/
+const upper = /[A-Z$_\p{Lu}]/
+const lower = /[a-z\p{Ll}]/
+const letter = /[a-zA-Z$_\p{Ll}\p{Lu}\p{Lo}\p{Lt}\p{Lm}\p{Nl}]/
+const digit = /[0-9]/
+const op = /[!#%&*+-\/:<=>?@\\^|~\p{Sm}\p{So}]+/
+const hex_digit = /[0-9A-Fa-f]/
+const non_zero_digit = /[1-9]/
 
 const block = (rule, $) => {
   return choice(
@@ -53,6 +61,120 @@ const cls_param_clauses = $ => seq(
 module.exports = grammar({
   name: 'scala',
 
+  precedences: $ => [
+    // Literals
+    [
+      'quoteid',
+      'procstring'
+    ],
+    // Types: https://www.scala-lang.org/files/archive/spec/2.13/03-types.html
+    [
+      'funtype',
+      'match_type',
+      'type',
+      'types',
+    ],
+    // Expressions: https://www.scala-lang.org/files/archive/spec/2.13/06-expressions.html
+    [
+      'simpleliteral', // custom
+      'literal',
+      'simpleref',
+      'singleton', // custom
+      'simpletype', // custom
+      'ids', // custom
+      'funcapply',
+      'methodval',
+      'typeapply',
+      'tuple',
+      'new',
+      'block',
+      'prefix',
+      'postfix',
+      'infix',
+      'typedexpr',
+      'annotexpr',
+      'assign',
+      'if',
+      'while',
+      'for',
+      'return',
+      'throw',
+      'try',
+      'anonfunc',
+      'binding', //custom
+      'patvar', //custom
+      'placeholder',
+      'blockresult', //custom
+      'blockstat', //custom
+      'argpatterns', //custom
+      'simplepattern', //custom
+      'simpleexpr', //custom
+    ],
+    [
+      'enumcase',
+      'localmodifier',
+      'enumdef',
+      'clsparamclause',
+      'classdef'
+    ]
+  ],
+
+  conflicts: $ => [ 
+    //  'given'  (given_sig  id  •  given_sig_repeat1  ':')
+    //  'given'  (simple_type1  id)  •  '
+    [$.given_sig, $.simple_type1],
+    //  'given'  (constr_app  simple_type1)  •  '
+    //  'given'  (simple_type  simple_type1)  •  '
+    [$.constr_app, $.simple_type],
+    //  '@'  '"""'  (string_literal_repeat2  '"'  •  '"'  char)
+    //  '@'  '"""'  (string_literal_repeat3  '"')  •  '"'  …
+    [$.string_literal],
+    // 1:  '@'  '$'  '{'  (prefix_expr  simple_expr)  •  '`'  …
+    // 2:  '@'  '$'  '{'  (simple_expr  simple_expr  •  fun_params  '=>'  indented_expr)
+    // 3:  '@'  '$'  '{'  (simple_expr  simple_expr  •  fun_params  '?>'  indented_expr)
+    [$.prefix_expr, $.simple_expr],
+    // 1:  'val'  alphaid  '"""'  (processed_string_literal_repeat2  '"'  •  '"'  char)
+    // 2:  'val'  alphaid  '"""'  (string_literal_repeat3  '"')  •  '"'  …
+    [$.processed_string_literal],
+    // 1:  '@'  '$'  '{'  'given'  (given_def  annot_type)  •  '
+    // 2:  '@'  '$'  '{'  'given'  (refined_type  annot_type  •  refined_type_repeat1)  (precedence: 0, associativity: Right)
+    [$.given_def, $.refined_type],
+    // 1:  'given'  constr_app  'with'  '{'  (dcl  refine_dcl)  •  '}'  …
+    // 2:  'given'  constr_app  'with'  (refinement  '{'  refine_dcl  •  '}')
+    [$.dcl, $.refinement],
+    // 1:  'def'  (def_sig  id  '('  def_params  ')')  •  ':'  …
+    // 2:  'def'  id  (def_param_clause  '('  def_params  ')')  •  ':'  …
+    [$.def_param_clause, $.def_sig],
+    // 1:  'class'  id  '{'  (def  'type'  type_dcl)  •  '}'  …
+    // 2:  'class'  id  '{'  (refine_dcl  'type'  type_dcl)  •  '}'  …
+    [$.refine_dcl, $.def],
+    // 1:  'enum'  id  '{'  'case'  (ids  id)  •  '}'  …
+    // 2:  'enum'  id  '{'  (enum_case  'case'  id)  •  '}'  …
+    [$.ids, $.enum_case],
+    // 1:  '@'  '$'  '{'  '.'  'varid_token3'  (decimal_numeral_repeat1  'varid_token3')  •  '_'  …
+    // 2:  '@'  '$'  '{'  (floating_point_literal  '.'  'varid_token3'  'varid_token3')  •  '_'  …   (precedence: 0, associativity: Right)
+    [$.floating_point_literal],
+    // 1:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3'  •  decimal_numeral_repeat1  'varid_token3')
+    // 2:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3')  •  '_'  …
+    [$.exponent_part],
+    // 1:  '@'  simple_type1  '('  postfix_expr  ':'  (type  infix_type)  •  ')'  …
+    // 2:  '@'  simple_type1  '('  postfix_expr  (ascription  ':'  infix_type)  •  ')'  …
+    [$.ascription, $.type],
+    // 1:  'def'  'this'  def_param_clause  (def_param_clause  '('  def_params  ')')  •  '='  …
+    // 2:  'def'  (def_def  'this'  def_param_clause  '('  def_params  ')'  •  '='  constr_expr)
+    [$.def_def, $.def_param_clause],
+    // // 1:  '@'  '$'  '{'  '{'  'case'  pattern  'if'  (simple_expr  simple_expr  '_')  •  '=>'  …
+    // // 2:  '@'  '$'  '{'  '{'  'case'  pattern  'if'  simple_expr  (fun_params  '_')  •  '=>'  …
+    [$.fun_params, $.simple_expr],
+    // 1:  '@'  (simple_type1  singleton  '.'  id)  •  '('  …  (precedence: 'simpletype')
+    // 2:  '@'  singleton  '.'  (simple_type1  id)  •  '('  …  (precedence: 'simpletype')
+    [$.simple_type1],
+    // 1:  '@'  singleton  ','  (singleton  singleton  •  '.'  id)         (precedence: 'singleton')
+    // 2:  '@'  singleton  ','  (singleton  singleton)  •  '.'  …          (precedence: 0, associativity: Right)
+    // 3:  '@'  singleton  (singleton_repeat1  ','  singleton)  •  '.'  …
+    [$.singleton],
+  ],
+
   rules: {
     source_file: _ => 'hello',
 
@@ -61,26 +183,16 @@ module.exports = grammar({
     unicode_escape: $ => seq('\\', 'u', repeat('u'), $.hex_digit, $.hex_digit, $.hex_digit, $.hex_digit),
 
     // Lexical Syntax
-    white_space: _ => choice( ' ', '\t', '\r', '\n'),
-    upper: _ => /[A-Z$_]/, // TODO and Unicode category Lu
-    lower: _ => /[a-z]/, // TODO and Unicode category Ll
-    letter: $ => choice($.upper, $.lower, /* TODO and Unicode categories Lo, Lt, Lm, Nl */),
-    digit: _ => /[0-9]/,
-    paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"),
-    delim: _ => choice('`', "'", '"', '.', ';', ','),
-    opchar: _ => choice(
-      '!', '#', '%', '&', '*', '+', '-', '/', ':',
-      '<', '=', '>', '?', '@', '\\', '^', '|', '~',
-      // TODO and Unicode categories Sm, So
-    ),
-    printable_char: _ => /[a-zA-Z0-9 ]/, // TODO needs to be “all characters in [\u0020, \u007E] inclusive”
-    char: _ => /[a-zA-Z0-9]/, // TODO no such rule in the grammar figure out whaut should it mean
-    char_escape_seq: _ => seq('\\', choice('b', 't', 'n', 'f', 'r', '"', "'", '\\')),
+    paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"), // TODO remove?
+    delim: _ => choice('`', "'", '"', '.', ';', ','), // TODO remove?
 
-    op: $ => seq($.opchar, repeat($.opchar)),
-    varid: $ => seq($.lower, idrest($)),
-    alphaid: $ => choice(seq($.upper, idrest($)), $.varid),
-    plainid: $ => choice($.alphaid, $.op),
+    printable_char: _ => token.immediate(/[\u0020-\u007E]/), 
+    char: _ => "foobar", // TODO no such rule in the grammar figure out whaut should it mean
+    char_escape_seq: _ => token.immediate(/\\[btnfr"'\\]/),
+
+    varid: $ => seq(lower, idrest),
+    alphaid: $ => seq(choice(upper, lower), token.immediate(idrest)),
+    plainid: $ => token(choice($.alphaid, op)),
     id: $ => choice(
       $.plainid,
       seq(
@@ -97,7 +209,7 @@ module.exports = grammar({
     decimal_numeral: $ => choice(
       '0', 
       seq(
-        $.non_zero_digit, 
+        non_zero_digit, 
         optional(seq(
             repeat(choice($.digit, '_')), 
             $.digit
@@ -113,7 +225,6 @@ module.exports = grammar({
         $.hex_digit
       ))
     ),
-    non_zero_digit: _ => /[1-9]/,
 
     floating_point_literal: $ => choice(
       seq(
@@ -222,7 +333,7 @@ module.exports = grammar({
     //   )
     // ),
 
-    symbol_literal: $ => seq("'", $.plainid), // until 2.13
+    symbol_literal: $ => token(seq("'", repeat1($.plainid))), // until 2.13
 
     comment: _ => choice(
       seq('/*', /* TODO any sequence of characters; nested comments are allowed ,*/ '*/'),
