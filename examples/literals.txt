@@ -1,3 +1,14 @@
 null
 'f'
 'fo
+
+`fo`
+0.1
+
+10L
+false true
+"'`\" \n"
+
+"""
+hello ふぉお""
+"""

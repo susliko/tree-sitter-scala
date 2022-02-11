@@ -15,11 +15,6 @@ module.exports = grammar({
   precedences: $ => [
     // Literals
     [
-      'quoteid',
-      'plainid',
-      'procstring'
-    ],
-    [
       'simpleref',
       'ids'
     ]
@@ -35,6 +30,7 @@ module.exports = grammar({
     // 1:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3'  •  decimal_numeral_repeat1  'varid_token3')
     // 2:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3')  •  '_'  …
     [$.exponent_part],
+    [$.character_literal, $.symbol_literal]
   ],
 
   extras: $ => [
@@ -42,13 +38,13 @@ module.exports = grammar({
   ],
 
   rules: {
-    source_file: $ => repeat($._literal),
+    source_file: $ => repeat(choice($.id, $._literal)),
 
     // Literals and Paths
 
     _literal: $ => choice($._simple_literal, $.symbol_literal, $.null_literal),
 
-    symbol_literal: $ => seq("'", $.plainid), // until 2.13
+    symbol_literal: $ => seq("'", repeat1($.char_element)), // until 2.13
 
     null_literal: $ => 'null',
 
@@ -57,7 +53,7 @@ module.exports = grammar({
       seq(optional('-'), $.floating_point_literal),
       $.boolean_literal,
       $.character_literal,
-      $.string_literal
+      $.string_literal,
     ),
 
 
@@ -68,21 +64,20 @@ module.exports = grammar({
     paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"), // TODO remove?
     delim: _ => choice('`', "'", '"', '.', ';', ','), // TODO remove?
 
-    printable_char: _ => token.immediate(/[\u0020-\u007E]/), 
     char_escape_seq: _ => token.immediate(/\\[btnfr"'\\]/),
 
-    varid: $ => seq(lower, idrest),
-    alphaid: $ => seq(choice(upper, lower), token.immediate(idrest)),
-    plainid: $ => prec('plainid', choice($.alphaid, op)),
+    plainid: $ => choice(
+      seq(choice(upper, lower), token.immediate(idrest)),
+      op,
+    ),
+
     id: $ => choice(
       $.plainid,
       seq(
         '`',
-        repeat(choice(
-          // $.char_no_back_quote_or_newline, // TODO. No such rule in the grammar
-          $.unicode_escape,
-          $.char_escape_seq)),
-        '`')
+        repeat($.char_element),
+        '`'
+      )
     ),
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
@@ -132,21 +127,23 @@ module.exports = grammar({
 
     boolean_literal: _ => choice('true', 'false'),
 
-    character_literal: $ => seq("'",  choice($.printable_char, $.char_escape_seq), "'"),
+    character_literal: $ => seq("'", $.char_element, "'"),
 
     char: _ => "foobar", // TODO no such rule in the grammar figure out whaut should it mean
 
     string_literal: $ => choice(
       seq('"', repeat($.string_element), '"'),
       seq('"""',
-        repeat(seq(optional('"'), optional('"'), $.char/* TODO needs to be char without '"' */)),
+        repeat(seq(optional('"'), optional('"'), /[^"]/ )), /* TODO needs to be char without '"' */
         repeat('"'), // multi_line_chars rule
         '"""'
       )
     ),
 
-    string_element: $ => choice(
-      $.printable_char, // TODO needs to be printable_char without '"' and without '\\'
+    string_element: $ => choice("'", '`', $.char_element),
+
+    char_element: $ => choice(
+      token.immediate(/[^'`"\\\n\r]/),
       $.unicode_escape,
       $.char_escape_seq
     ),

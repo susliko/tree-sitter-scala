@@ -1,2 +1,6 @@
-package bar
-import foo
+
+object f {
+'f'
+'か'
+
+}
