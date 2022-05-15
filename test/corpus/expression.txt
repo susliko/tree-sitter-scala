@@ -1,0 +1,18 @@
+=========
+[expression] Simple expr
+=========
+
+expr type "abc"
+
+----
+
+(source_file
+  (type
+    (string_literal
+      (string_element
+        (char_element))
+      (string_element
+        (char_element))
+      (string_element
+        (char_element)))))
+

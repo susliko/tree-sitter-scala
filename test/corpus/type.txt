@@ -1,0 +1,16 @@
+=========
+[type] String
+=========
+
+String
+----
+
+(source_file
+  (type
+    (infix_type
+      (refined_type
+        (annot_type
+          (simple_type
+            (simple_type1
+              (id
+                (plainid)))))))))

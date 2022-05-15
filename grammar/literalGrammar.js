@@ -5,14 +5,30 @@ const letter = /[a-zA-Z$_\p{Ll}\p{Lu}\p{Lo}\p{Lt}\p{Lm}\p{Nl}]/
 const digit = /[0-9]/
 const op = /[!#%&*+-\/:<=>?@\\^|~\p{Sm}\p{So}]+/
 const hex_digit = /[0-9A-Fa-f]/
-const non_zero_digit = /[1-9]/
+// const non_zero_digit = /[1-9]/
+const non_zero_digit = choice('1', '2', '3', '4', '5', '6', '7', '8', '9')
 
 const idrest = seq(repeat(choice(letter, digit)), optional(seq('_', op)))
+
+const digits = (digitRule) => seq(
+  token.immediate(digitRule),
+  token.immediate(optional(seq(
+    repeat(choice(digitRule, '_')),
+    digitRule
+  ))),
+)
 
 module.exports = grammar({
   name: 'scala',
 
-  precedences: $ => [
+  inline: $ => [
+    $.string_element,
+    $.char_element,
+    $.decimal_numeral,
+    $.exponent_part,
+  ],
+
+  precedences: _ => [
     // Literals
     [
       'simpleref',
@@ -24,16 +40,11 @@ module.exports = grammar({
     //  '@'  '"""'  (string_literal_repeat2  '"'  •  '"'  char)
     //  '@'  '"""'  (string_literal_repeat3  '"')  •  '"'  …
     [$.string_literal],
-    // 1:  '@'  '$'  '{'  '.'  'varid_token3'  (decimal_numeral_repeat1  'varid_token3')  •  '_'  …
-    // 2:  '@'  '$'  '{'  (floating_point_literal  '.'  'varid_token3'  'varid_token3')  •  '_'  …   (precedence: 0, associativity: Right)
-    [$.floating_point_literal],
-    // 1:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3'  •  decimal_numeral_repeat1  'varid_token3')
-    // 2:  '@'  '$'  '{'  decimal_numeral  (exponent_part  'E'  'varid_token3')  •  '_'  …
-    [$.exponent_part],
-    [$.character_literal, $.symbol_literal]
+    [$.character_literal, $.symbol_literal],
+    [$.floating_point_literal, $.integer_literal],
   ],
 
-  extras: $ => [
+  extras: _ => [
     white_space
   ],
 
@@ -46,7 +57,7 @@ module.exports = grammar({
 
     symbol_literal: $ => seq("'", repeat1($.char_element)), // until 2.13
 
-    null_literal: $ => 'null',
+    null_literal: _ => 'null',
 
     _simple_literal: $ => choice(
       seq(optional('-'), $.integer_literal),
@@ -58,7 +69,7 @@ module.exports = grammar({
 
 
     // Unicode escapes
-    unicode_escape: $ => token.immediate(seq('\\', /[u]+/, hex_digit, hex_digit, hex_digit, hex_digit)),
+    unicode_escape: _ => token.immediate(seq('\\', /[u]+/, hex_digit, hex_digit, hex_digit, hex_digit)),
 
     // Lexical Syntax
     paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"), // TODO remove?
@@ -66,7 +77,7 @@ module.exports = grammar({
 
     char_escape_seq: _ => token.immediate(/\\[btnfr"'\\]/),
 
-    plainid: $ => choice(
+    plainid: _ => choice(
       seq(choice(upper, lower), token.immediate(idrest)),
       op,
     ),
@@ -80,50 +91,47 @@ module.exports = grammar({
       )
     ),
 
-    integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
-    decimal_numeral: $ => choice(
-      '0', 
+    integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), optional(choice('L', 'l'))),
+    decimal_numeral: _ => choice(
+      '0',
       seq(
-        non_zero_digit, 
-        optional(seq(
-            repeat(choice(digit, '_')), 
+        non_zero_digit,
+        token.immediate(optional(seq(
+            repeat(choice(digit, '_')),
             digit
-        ))
+        )))
       )
     ),
-    hex_numeral: $ => seq(
+    hex_numeral: _ => seq(
       '0',
       choice('x', 'X'),
-      hex_digit,
-      optional(seq(
-        repeat(choice(hex_digit, '_')),
-        hex_digit
-      ))
+      digits(hex_digit),
     ),
 
-    floating_point_literal: $ => prec.right(choice(
+    floating_point_literal: $ => choice(
       seq(
-        optional($.decimal_numeral),
-        '.',
-        digit,
-        optional(seq(repeat(choice(digit, '_')), digit)),
+        $.decimal_numeral,
+        token.immediate('.'),
+        digits(digit),
         optional($.exponent_part),
-        optional($.float_type)
+        optional($._float_type)
       ),
-      seq($.decimal_numeral, $.exponent_part, optional($.float_type)),
-      seq($.decimal_numeral, $.float_type)
-    )), // TODO review prec.right
+      seq(
+        '.',
+        digits(digit),
+        optional($.exponent_part),
+        optional($._float_type)
+      ),
+      seq($.decimal_numeral, $.exponent_part, optional($._float_type)),
+      seq($.decimal_numeral, $._float_type)
+    ),
 
-    exponent_part: $ => prec.right(seq(
-      choice('E', 'e'), 
-      optional(choice('+', '-')), 
-      digit, 
-      optional(seq(
-        repeat(choice(digit, '_')),
-        digit
-      ))
+    exponent_part: _ => prec.right(seq(
+      token.immediate(choice('E', 'e')),
+      token.immediate(optional(choice('+', '-'))),
+      digits(digit)
     )),
-    float_type: _ => choice('F', 'f', 'D', 'd'),
+    _float_type: _ => token.immediate(choice('F', 'f', 'D', 'd')),
 
     boolean_literal: _ => choice('true', 'false'),
 
@@ -135,7 +143,7 @@ module.exports = grammar({
       seq('"', repeat($.string_element), '"'),
       seq('"""',
         repeat(seq(optional('"'), optional('"'), /[^"]/ )), /* TODO needs to be char without '"' */
-        repeat('"'), // multi_line_chars rule
+        repeat('"'),
         '"""'
       )
     ),
@@ -148,20 +156,12 @@ module.exports = grammar({
       $.char_escape_seq
     ),
 
-    // This one is inline since it can match an empty string
-    // multi_line_chars: $ => seq(
-    //   repeat(seq(optional('"'), optional('"'), $.char /* TODO needs to be char without '"' */)),
-    //   repeat('"')
-    // ),
-
-
     // This one is inlined since it matches empty string
     // string_format: $ => repeat(
     //   seq(
     //     $.printable_char, // TODO substitute from printable_char (‘"’ | ‘}’ | ‘ ’ | ‘\t’ | ‘\n’)
     //   )
     // ),
-
 
     comment: _ => choice(
       seq('/*', /* TODO any sequence of characters; nested comments are allowed ,*/ '*/'),
@@ -185,6 +185,10 @@ module.exports = grammar({
     )),
 
     class_qualifier: $ => seq('[', $.id, ']'),
+
+    // TODO indents as external scanner
+    indent: _ => 'aaaab',
+    outdent: _ => 'aaaac',
   }
 });
 

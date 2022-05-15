@@ -36,7 +36,7 @@ const template = $ => seq(
 const constr_mods = $ => seq(repeat($.annotation), optional($.access_modifier))
 
 const class_constr = $ => seq(
-  optional($.cls_type_param_clause), 
+  optional($.cls_type_param_clause),
   optional(constr_mods($)),
   cls_param_clauses($)
 )
@@ -45,7 +45,7 @@ const type_bounds = $ => seq(optional($.lower_bound), optional($.upper_bound))
 const type_param_bounds = $ => seq(type_bounds($), repeat($.contex_bound))
 
 const def_param_clauses = $ => seq(
-  repeat($.def_param_clause), 
+  repeat($.def_param_clause),
   optional(seq(optional($.nl), '(', optional('implicit'), $.def_params, ')'))
 )
 
@@ -118,7 +118,7 @@ module.exports = grammar({
     ]
   ],
 
-  conflicts: $ => [ 
+  conflicts: $ => [
     //  'given'  (given_sig  id  •  given_sig_repeat1  ':')
     //  'given'  (simple_type1  id)  •  '
     [$.given_sig, $.simple_type1],
@@ -184,7 +184,7 @@ module.exports = grammar({
     paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"), // TODO remove?
     delim: _ => choice('`', "'", '"', '.', ';', ','), // TODO remove?
 
-    printable_char: _ => token.immediate(/[\u0020-\u007E]/), 
+    printable_char: _ => token.immediate(/[\u0020-\u007E]/),
     char: _ => "foobar", // TODO no such rule in the grammar figure out whaut should it mean
     char_escape_seq: _ => token.immediate(/\\[btnfr"'\\]/),
 
@@ -205,11 +205,11 @@ module.exports = grammar({
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), choice('L', 'l')),
     decimal_numeral: $ => choice(
-      '0', 
+      '0',
       seq(
-        $.non_zero_digit, 
+        $.non_zero_digit,
         optional(seq(
-            repeat(choice(digit, '_')), 
+            repeat(choice(digit, '_')),
             digit
         ))
       )
@@ -239,9 +239,9 @@ module.exports = grammar({
     )), // TODO review prec.right
 
     exponent_part: $ => prec.right(seq(
-      choice('E', 'e'), 
-      optional(choice('+', '-')), 
-      digit, 
+      choice('E', 'e'),
+      optional(choice('+', '-')),
+      digit,
       optional(seq(
         repeat(choice(digit, '_')),
         digit
@@ -404,7 +404,7 @@ module.exports = grammar({
       seq($.singleton, '.', $.type),
       seq('(', $.types, ')'),
       $.refinement,
-      seq('$', '{', 
+      seq('$', '{',
         seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
         '}'),
       seq('$', '{', $.pattern, '}'), // only inside quoted pattern
@@ -439,17 +439,17 @@ module.exports = grammar({
     ),
     block_result: $ => prec.right('blockresult', choice(
       prec('anonfunc', seq(
-        $.fun_params, 
-        choice('=>', '?=>'), 
+        $.fun_params,
+        choice('=>', '?=>'),
         seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
       )),
       prec('anonfunc', seq(
-        $.hk_type_param_clause, 
-        '=>', 
+        $.hk_type_param_clause,
+        '=>',
         seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
       )),
       $.expr1
-    )), 
+    )),
     fun_params: $ => choice($.bindings, $.id, '_'),
 
     expr1: $ => choice(
@@ -464,14 +464,14 @@ module.exports = grammar({
       $.inline
     ),
 
-    if: $ => prec.right('if', 
+    if: $ => prec.right('if',
       seq(
         choice(
             seq(optional('inline'), 'if', '(', $.expr, ')', repeat($.nl)),
             seq(optional('inline'), 'if',  $.expr, 'then')
         ),
         seq(
-          $.expr, 
+          $.expr,
           optional(seq(optional($.semi), 'else', $.expr))
         )
       )
@@ -510,7 +510,7 @@ module.exports = grammar({
       seq($.infix_expr, $.id, optional($.nl), $.infix_expr),
       seq($.infix_expr, $.id, ':', $.indented_expr),
       seq($.infix_expr, $.match_clause),
-    )), 
+    )),
     match_clause: $ => seq('match', block($.case_clauses, $)),
     prefix_expr: $ => prec('prefix', seq(optional($.prefix_operator), $.simple_expr)),
     prefix_operator: _ => prec('prefix', choice('-', '+', '~', '!')),
@@ -535,11 +535,11 @@ module.exports = grammar({
       seq($.simple_expr, $.fun_params, choice('=>', '?>'), $.indented_expr), // TODO under language.experimental.fewer_braces
       prec('methodval', seq($.simple_expr, '_')), // ok
     )),
- 
+
     indented_expr: $ => seq(
-      $.indent, 
+      $.indent,
       choice(
-        $.case_clauses, 
+        $.case_clauses,
         seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
       ),
       $.outdent
@@ -747,17 +747,17 @@ module.exports = grammar({
     ),
     end_marker: $ => seq('end', $.end_marker_tag), // TODO when followed by EOL
     end_marker_tag: _ => choice(
-      'id', 'if', 'while', 'for', 'match', 'try', 
+      'id', 'if', 'while', 'for', 'match', 'try',
       'new', 'this', 'given', 'extension', 'val'),
 
     // Declarations and Definitions
- 
+
     refine_dcl: $ => choice(
       seq('val', $.val_dcl),
       seq('def', $.def_dcl),
       seq('type', repeat($.nl), $.type_dcl)
     ),
- 
+
     dcl: $ => choice($.refine_dcl, seq('var', $.var_dcl)),
     val_dcl: $ => seq($.ids, ':', $.type),
     var_dcl: $ => seq($.ids, ':', $.type),
@@ -794,21 +794,21 @@ module.exports = grammar({
     ),
 
     class_def: $ => prec.right('classdef', seq(
-      $.id, 
-      class_constr($), 
+      $.id,
+      class_constr($),
       optional(template($)),
     )),
     object_def: $ => prec.right(seq(
-      $.id, 
+      $.id,
       optional(template($)),
     )),
     enum_def: $ => prec('enumdef', seq(
-      $.id, 
-      class_constr($), 
+      $.id,
+      class_constr($),
       inherit_clauses($),
       $.enum_body)),
     given_def: $ => seq(
-      optional($.given_sig), 
+      optional($.given_sig),
       choice(seq($.annot_type, optional(seq('=', $.expr))), $.structural_instance)
     ),
     given_sig: $ => seq(optional($.id), optional($.def_type_param_clause), repeat($.using_param_clause), ':'),
@@ -826,12 +826,12 @@ module.exports = grammar({
       $.ext_methods
     ),
     ext_methods: $ => choice(
-      $.ext_method, 
+      $.ext_method,
       seq(optional($.nl), block(seq($.ext_method, repeat(seq($.semi, $.ext_method))), $))
     ),
     ext_method: $ => seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), 'def', $.def_def),
     constr_apps: $ => seq(
-      $.constr_app, 
+      $.constr_app,
       choice(repeat(seq(',', $.constr_app)), repeat(seq('with', $.constr_app)))
     ),
     constr_app: $ => prec.right(seq($.simple_type1, repeat($.annotation), repeat($.par_argument_exprs))), // TODO review prec.right
@@ -842,11 +842,11 @@ module.exports = grammar({
     self_invocation: $ => seq('this', $.argument_exprs, repeat($.argument_exprs)),
 
     template_body: $ => block_body(seq(
-      optional($.self_type), 
-      $.template_stat, 
+      optional($.self_type),
+      $.template_stat,
       repeat(seq($.semi, $.template_stat))
     ), $),
-      
+
     template_stat: $ => choice(
       $.import,
       $.export,
@@ -869,9 +869,9 @@ module.exports = grammar({
       seq(repeat(seq($.annotation, optional($.nl))), repeat($.modifier), $.enum_case),
     ),
     enum_case: $ => prec.right('enumcase', seq(
-      'case', 
+      'case',
       choice(
-        seq($.id, class_constr($), optional(seq('extends', $.constr_apps))), 
+        seq($.id, class_constr($), optional(seq('extends', $.constr_apps))),
         $.ids
       )
     )), // TODO review prec.right
@@ -887,7 +887,7 @@ module.exports = grammar({
       $.end_marker,
     ),
 
-    packaging: $ => seq('package', $.qual_id, block_body($.top_stats, $)), 
+    packaging: $ => seq('package', $.qual_id, block_body($.top_stats, $)),
     package_object: $ => seq('package', 'object', $.object_def),
 
 
