@@ -1,12 +1,55 @@
 =========
+[literal] Coments
+=========
+this is not a coment // this is a comment
+----
+
+(source_file (id) (id) (id) (id) (id) (comment))
+
+=========
+[literal] Symbol literal
+=========
+'hello
+'he\nll\bo
+'he\u5c5fllo
+----
+
+(source_file
+  (symbol_literal)
+  (symbol_literal (char_escape_seq) (char_escape_seq))
+  (symbol_literal (unicode_escape)))
+
+=========
+[literal] Chars
+=========
+'a'
+'\u2e44'
+'ש'
+'\t'
+'я'
+----
+
+(source_file
+  (character_literal)
+  (character_literal (unicode_escape))
+  (character_literal)
+  (character_literal (char_escape_seq))
+  (character_literal))
+
+=========
 [literal] String content unicode
 =========
 
 "abc\u304bпрограмма"
+"hello ふぉお"
+"שלום"
 
 ----
 
-(source_file (string_literal (unicode_escape)))
+(source_file
+  (string_literal (unicode_escape))
+  (string_literal)
+  (string_literal))
 
 =========
 [literal] String content escape
@@ -56,10 +99,14 @@ true false
 420
 -1
 2022_05_15
+69l
+420L
 
 ----
 
 (source_file
+ (integer_literal)
+ (integer_literal)
  (integer_literal)
  (integer_literal)
  (integer_literal)

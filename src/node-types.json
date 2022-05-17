@@ -39,6 +39,11 @@
     }
   },
   {
+    "type": "comment",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "floating_point_literal",
     "named": true,
     "fields": {}
@@ -58,10 +63,6 @@
       "types": [
         {
           "type": "char_escape_seq",
-          "named": true
-        },
-        {
-          "type": "plainid",
           "named": true
         },
         {
@@ -88,11 +89,6 @@
   },
   {
     "type": "nl",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "plainid",
     "named": true,
     "fields": {}
   },
@@ -299,6 +295,10 @@
   },
   {
     "type": "]",
+    "named": false
+  },
+  {
+    "type": "_",
     "named": false
   },
   {

@@ -1,26 +1,18 @@
 const literalGrammar = require('./literalGrammar')
-
-const block = (rule, $) => {
-  return choice(
-    seq('{', rule, '}'),
-    seq($.indent, rule, $.outdent),
-  )
-}
-
-const digits = (digitRule) => {
-  seq(
-    token.immediate(digitRule),
-    token.immediate(optional(seq(
-      repeat(choice(digitRule, '_')),
-      digitRule
-    ))),
-  )
-}
+const { block } = require('./utils')
 
 const type_bounds = $ => seq(optional($.lower_bound), optional($.upper_bound))
 
 module.exports = grammar(literalGrammar, {
   name: 'scala',
+
+  extras: ($, literal) => [
+    ...literal,
+  ],
+
+  inline: ($, literal) => [
+    ...literal,
+  ],
 
   precedences: (_, literal) => [
     ...literal,
@@ -38,19 +30,20 @@ module.exports = grammar(literalGrammar, {
 
   conflicts: ($, literal) => [
     ...literal,
-    [$.simple_type1],
-    [$.singleton],
+    [$._simple_type1, $._singleton],
+    [$._simple_type1],
+    [$._singleton],
   ],
 
   rules: {
-    source_file: $ => $.type,
+    source_file: $ => seq($.type, '\n'),
 
     type: $ => prec('type', choice(
       $.fun_type,
       seq($.hk_type_param_clause, '=>>', $.type),
       seq($.fun_param_clause, '=>>', $.type),
-      $.match_type,
-      $.infix_type
+      $._match_type,
+      $._infix_type
     )),
     fun_type: $ => prec('funtype', choice(
       seq($.fun_type_args, choice('=>', '?=>'), $.type),
@@ -58,47 +51,48 @@ module.exports = grammar(literalGrammar, {
     )),
     hk_type_param_clause: _ => '!hk_type_param_clause!',
     fun_type_args: $ => prec('funtype', choice(
-      $.infix_type,
+      $._infix_type,
       seq('(', optional($.fun_arg_types), ')'),
       $.fun_param_clause
     )),
     fun_param_clause: $ => seq('(', $.typed_fun_param, repeat(seq(',', $.typed_fun_param)), ')'),
     typed_fun_param: $ => seq($.id, ':', $.type),
-    match_type: $ => prec('match_type', seq($.infix_type, 'match', block($.type_case_clauses, $))),
-    type_case_clauses: _ => '!type_case_clauses!',
-    infix_type: $ => prec.right(seq($.refined_type, repeat(seq($.id, optional($.nl), $.refined_type)))), // TODO review prec.right
-    refined_type: $ => prec.right(seq($.annot_type, repeat(seq(optional($.nl), $.refinement)))),// TODO review prec.right
-    annot_type: $ => prec.right(seq($.simple_type, repeat($.annotation))), // TODO review prec.right
+    _match_type: $ => prec('match_type', seq($._infix_type, 'match', block($.type_case_clauses, $))),
+    type_case_clauses: $ => seq($.type_case_clause, repeat($.type_case_clause)),
+    type_case_clause: $ => seq('case', choice($._infix_type, '_'), '=>', $.type, optional($.semi)),
+    _infix_type: $ => prec.left(seq($._refined_type, repeat(seq($.id, optional($.nl), $._refined_type)))), // TODO review prec.right
+    _refined_type: $ => prec.left(seq($._annot_type, repeat(seq(optional($.nl), $.refinement)))),// TODO review prec.right
+    _annot_type: $ => prec.left(seq($._simple_type, repeat($.annotation))), // TODO review prec.right
     annotation: _ => '!annotation!',
 
-    simple_type: $ => prec.right('simpletype', choice(
+    _simple_type: $ => prec.right('simpletype', choice(
       $._simple_literal,
       seq('?', type_bounds($)),
-      $.simple_type1
+      $._simple_type1
     )), // TODO review prec.right
-    simple_type1: $ => prec('simpletype', choice(
+    _simple_type1: $ => prec('simpletype', choice(
       $.id,
-      seq($.singleton, '.', $.id),
-      seq($.singleton, '.', $.type),
-      seq('(', $.types, ')'),
-      $.refinement,
-      seq('$', '{',
-        seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
-        '}'),
-      seq('$', '{', $.pattern, '}'), // only inside quoted pattern
-      seq($.simple_type1, $.type_args),
-      seq($.simple_type1, '#', $.id)
+      seq($._singleton, repeat1(seq('.', $.id))), //TODO uncomment and fix all this
+      // seq($.singleton, '.', $.type),//TODO uncomment and fix all this
+      // seq('(', $.types, ')'),//TODO uncomment and fix all this
+      // $.refinement,//TODO uncomment and fix all this
+      // seq('$', '{',//TODO uncomment and fix all this
+        // seq(repeat(seq($.block_stat, $.semi)), optional($.block_result)), // block rule
+        // '}'),
+      // seq('$', '{', $.pattern, '}'), // only inside quoted pattern//TODO uncomment and fix all this
+      // seq($._simple_type1, $.type_args),//TODO uncomment and fix all this
+      // seq($._simple_type1, '#', $.id)//TODO uncomment and fix all this
     )),
     pattern: _ => '!pattern!',
     block_stat: _ => '!block_stat!',
     block_result: _ => '!block_result!',
-    singleton: $ => prec('singleton', choice(
-      $.simple_ref,
+    _singleton: $ => prec('singleton', choice(
       $._simple_literal,
-      seq($.singleton, '.', $.id),
-      seq($.singleton, repeat(seq(',', $.singleton)))
+      $.id,
+      // seq(optional(seq($.id, '.')), 'super', optional($.class_qualifier), '.', $.id),
+      // seq($.singleton, '.', $.id),
+      // seq($.singleton, repeat(seq(',', $.singleton)))
     )),
-    singletons: $ => seq($.singleton, repeat(seq(',', $.singleton))), // TODO remove?
     fun_arg_type: $ => prec('funtype', choice($.type, seq('=>', $.type))),
     fun_arg_types: $ => seq($.fun_arg_type, repeat(seq(',', $.fun_arg_type))),
     param_type: $ => seq(optional('=>'), $.param_value_type),
