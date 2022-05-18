@@ -1,16 +1,200 @@
-=========
-[type] String
-=========
+======
+[type] Int
+======
 
-String
+Int
+
 ----
 
-(source_file
+(source_file (type (id)))
+
+======
+[type] Unit
+======
+
+Unit
+
+----
+
+(source_file (type (id)))
+
+======
+[type] dot type
+======
+
+Int.type
+
+----
+
+(source_file (type (id) (id)))
+
+======
+[type] dots type
+======
+
+scala.util.Try
+
+----
+
+(source_file (type (id) (id) (id)))
+
+======
+[type] dots type with type parameter
+======
+
+scala.util.Try[Int]
+
+----
+
+(source_file (type
+  (id)
+  (id)
+  (id)
+  (type_args (type (id)))))
+
+======
+[type] type parameter
+======
+
+List[Byte]
+
+----
+
+(source_file (type
+  (id)
+  (type_args (type (id)))))
+
+======
+[type] type parameters
+======
+
+Map[Key, Value]
+
+----
+
+(source_file (type
+  (id)
+  (type_args (type (id)) (type (id)))))
+
+======
+[type] path-dependent types
+======
+
+SomeType#AnotherType
+
+----
+
+(source_file (type (id) (id)))
+
+======
+[type] tuple
+======
+
+(Strig, Int)
+
+----
+
+(source_file (type
+  (type (id))
+  (type (id))))
+
+======
+[type] function
+======
+
+String => Int
+
+----
+
+(source_file (type
+  (id)
+  (type (id))))
+
+======
+[type] function with multiple params
+======
+
+(Int, Strig, Any) => Int
+
+----
+
+(source_file (type
+  (type (id))
+  (type (id))
+  (type (id))
+  (type (id))))
+
+======
+[type] function with by name params
+======
+
+(Int, =>Strig, => Any) => Int
+
+----
+
+(source_file (type
+  (type (id))
+  (type (id))
+  (type (id))
+  (type (id))))
+
+======
+[type] higher order function
+======
+
+(Int => Int) => Int
+
+----
+
+(source_file (type
+  (type (id)
+  (type (id)))
+  (type (id))
+))
+
+======
+[type] tupped function
+======
+
+((Int, Int)) => Int
+
+----
+
+(source_file (type
   (type
-    (infix_type
-      (refined_type
-        (annot_type
-          (simple_type
-            (simple_type1
-              (id
-                (plainid)))))))))
+    (type (id))
+    (type (id)))
+  (type (id))
+))
+
+======
+[type] union type
+======
+
+Int | String
+
+----
+
+(source_file (type (id) (id) (id)))
+
+======
+[type] intersection type
+======
+
+Int & String
+
+----
+
+(source_file (type (id) (id) (id)))
+
+
+======
+[type] Infix type
+======
+
+Int + String
+
+----
+
+(source_file (type (id) (id) (id)))
+

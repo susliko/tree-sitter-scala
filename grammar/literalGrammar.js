@@ -22,6 +22,7 @@ module.exports = grammar({
   name: 'scala',
 
   inline: $ => [
+    $.plainid,
     $.string_element,
     $.char_element,
     $.decimal_numeral,
@@ -44,8 +45,9 @@ module.exports = grammar({
     [$.floating_point_literal, $.integer_literal],
   ],
 
-  extras: _ => [
-    white_space
+  extras: $ => [
+    white_space,
+    $.comment
   ],
 
   rules: {
@@ -81,6 +83,7 @@ module.exports = grammar({
       seq(choice(upper, lower), token.immediate(idrest)),
       op,
     ),
+    varid: _ => seq(lower, idrest),
 
     id: $ => choice(
       $.plainid,
