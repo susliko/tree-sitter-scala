@@ -27,6 +27,8 @@ module.exports = grammar({
     $.char_element,
     $.decimal_numeral,
     $.exponent_part,
+    $.nl,
+    $.semi,
   ],
 
   precedences: _ => [
@@ -173,7 +175,7 @@ module.exports = grammar({
 
 
     nl: _ => choice('\n', '\r\n'),
-    semi: $ => prec.left(choice(';', seq($.nl, repeat($.nl)))),
+    semi: $ => prec.left(choice(';', repeat1($.nl))),
 
     // Context-free Syntax
 

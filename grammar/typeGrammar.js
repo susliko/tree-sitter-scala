@@ -15,7 +15,10 @@ module.exports = grammar(literalGrammar, {
     $.fun_type_args,
     $.fun_arg_type,
     $.fun_type,
-    // TODO probably need to inline $.id
+    $.type_case_clauses,
+    $.id,
+    $.upper_bound,
+    $.lower_bound,
   ],
 
   precedences: (_, literal) => [
@@ -61,16 +64,16 @@ module.exports = grammar(literalGrammar, {
     fun_param_clause: $ => seq('(', $.typed_fun_param, repeat(seq(',', $.typed_fun_param)), ')'),
     typed_fun_param: $ => seq($.id, ':', $.type),
     _match_type: $ => prec('match_type', seq($._infix_type, 'match', block($.type_case_clauses, $))),
-    type_case_clauses: $ => seq($.type_case_clause, repeat($.type_case_clause)),
+    type_case_clauses: $ => repeat1($.type_case_clause),
     type_case_clause: $ => seq('case', choice($._infix_type, '_'), '=>', $.type, optional($.semi)),
-    _infix_type: $ => prec.left(seq($._refined_type, repeat(seq($.id, optional($.nl), $._refined_type)))), // TODO review prec.right
-    _refined_type: $ => prec.left(seq($._annot_type, repeat(seq(optional($.nl), $.refinement)))),// TODO review prec.right
-    _annot_type: $ => prec.left(seq($._simple_type, repeat($.annotation))), // TODO review prec.right
+    _infix_type: $ => prec.left(seq($._refined_type, repeat(seq($.id, optional($.nl), $._refined_type)))), // TODO review prec.left
+    _refined_type: $ => prec.left(seq($._annot_type, repeat(seq(optional($.nl), $.refinement)))),// TODO review prec.left
+    _annot_type: $ => prec.left(seq($._simple_type, repeat($.annotation))), // TODO review prec.left
     annotation: _ => '!annotation!',
 
     _simple_type: $ => prec.right('simpletype', choice(
       $._simple_literal,
-      // seq('?', type_bounds($)), // TODO what is this?
+      seq('?', type_bounds($)),
       $._simple_type1,
       seq($._simple_type1, $.type_args),
       seq($._simple_type1, '#', $.id),
