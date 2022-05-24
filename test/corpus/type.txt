@@ -117,7 +117,7 @@ String => Int
 [type] function with by name params
 ======
 
-(Int, =>Strig, => Any) => Int
+(Int, =>String, => Any) => Int
 
 ----
 

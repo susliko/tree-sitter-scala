@@ -1,18 +1,42 @@
-=========
-[expression] Simple expr
-=========
+============
+[expression] Int
+============
 
-expr type "abc"
+1
 
 ----
 
-(source_file
-  (type
-    (string_literal
-      (string_element
-        (char_element))
-      (string_element
-        (char_element))
-      (string_element
-        (char_element)))))
+(source_file (integer_literal))
+
+============
+[expression] String literal
+============
+
+"привет мир"
+
+----
+
+(source_file (string_literal))
+
+
+============
+[expression] reference
+============
+
+this
+
+----
+
+(source_file (simple_ref))
+
+============
+[expression] another reference
+============
+
+hello
+
+----
+
+(source_file (simple_ref))
+
 
