@@ -77,7 +77,7 @@ module.exports = grammar({
     [
       'simpleliteral', // custom
       'literal',
-      'simpleref',
+      'ref',
       'singleton', // custom
       'simpletype', // custom
       'ids', // custom
@@ -360,7 +360,7 @@ module.exports = grammar({
     ids: $ => prec('ids', seq($.id, repeat(seq(',', $.id)))),
 
 
-    simple_ref: $ => prec.right('simpleref', choice(
+    ref: $ => prec.right('ref', choice(
       $.id,
       seq(optional(seq($.id, '.')), 'this'),
       seq(optional(seq($.id, '.')), 'super', optional($.class_qualifier), '.', $.id)
@@ -412,7 +412,7 @@ module.exports = grammar({
       seq($.simple_type1, '#', $.id)
     )),
     singleton: $ => prec('singleton', choice(
-      $.simple_ref,
+      $.ref,
       $.simple_literal,
       seq($.singleton, '.', $.id),
       seq($.singleton, repeat(seq(',', $.singleton)))
@@ -516,7 +516,7 @@ module.exports = grammar({
     prefix_operator: _ => prec('prefix', choice('-', '+', '~', '!')),
 
     simple_expr: $ => prec.right('simpleexpr', choice(
-      $.simple_ref, // ok
+      $.ref, // ok
       $.literal, // ok
       prec('placeholder', '_'),
       $.block_expr, // ok
@@ -616,7 +616,7 @@ module.exports = grammar({
       prec('funcapply', seq($.simple_pattern1, optional($.type_args), optional($.argument_patterns))), // ok
       seq('given', $.refined_type)
     )),
-    simple_pattern1: $ => prec('simplepattern', choice($.simple_ref, seq($.simple_pattern1, '.', $.id))),
+    simple_pattern1: $ => prec('simplepattern', choice($.ref, seq($.simple_pattern1, '.', $.id))),
 
     pat_var: $ => prec('patvar', choice($.varid, '_')),
     patterns: $ => prec.right(seq($.pattern, repeat(seq(',', $.pattern)))), // TODO review prec.right
@@ -731,8 +731,8 @@ module.exports = grammar({
     import: $ => seq('import', $.import_expr, repeat(seq(',', $.import_expr))),
     export: $ => seq('export', $.import_expr, repeat(seq(',', $.import_expr))),
     import_expr: $ => choice(
-      seq($.simple_ref, repeat(seq('.', $.id)), '.', $.import_spec),
-      seq($.simple_ref, 'as', $.id)
+      seq($.ref, repeat(seq('.', $.id)), '.', $.import_spec),
+      seq($.ref, 'as', $.id)
     ),
     import_spec: $ => choice(
       $.named_selector,

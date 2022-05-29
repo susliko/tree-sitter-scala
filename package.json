@@ -11,9 +11,25 @@
     "nan": "^2.12.1"
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.20.2"
+    "tree-sitter-cli": "^0.20.6"
   },
   "scripts": {
-    "test": "tree-sitter test"
-  }
+    "test": "tree-sitter test",
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/susliko/tree-sitter-scala.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/susliko/tree-sitter-scala/issues"
+  },
+  "homepage": "https://github.com/susliko/tree-sitter-scala#readme"
 }

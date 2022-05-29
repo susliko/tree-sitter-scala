@@ -34,7 +34,7 @@ module.exports = grammar({
   precedences: _ => [
     // Literals
     [
-      'simpleref',
+      'ref',
       'ids'
     ]
   ],
@@ -183,7 +183,7 @@ module.exports = grammar({
     ids: $ => prec('ids', seq($.id, repeat(seq(',', $.id)))),
 
 
-    simple_ref: $ => prec.right('simpleref', choice(
+    ref: $ => prec.right('ref', choice(
       $.id,
       seq(optional(seq($.id, '.')), 'this'),
       seq(optional(seq($.id, '.')), 'super', optional($.class_qualifier), '.', $.id)

@@ -30,7 +30,7 @@ module.exports = grammar(literalGrammar, {
       'match_type',
       'type',
       'types',
-      'simpleref',
+      'ref',
       'singleton', // custom
       'simpletype', // custom
     ],
@@ -39,6 +39,7 @@ module.exports = grammar(literalGrammar, {
   conflicts: ($, literal) => [
     ...literal,
     [$._types, $._fun_arg_types],
+    [$._simple_type1]
   ],
 
   rules: {
