@@ -56,10 +56,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -107,10 +103,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -147,6 +139,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -164,10 +160,6 @@
         },
         {
           "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {
@@ -301,10 +293,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -334,141 +322,6 @@
         },
         {
           "type": "unicode_escape",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "assign_expr",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "annotation",
-          "named": true
-        },
-        {
-          "type": "arguments",
-          "named": true
-        },
-        {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
-          "type": "block",
-          "named": true
-        },
-        {
-          "type": "boolean_literal",
-          "named": true
-        },
-        {
-          "type": "call_expr",
-          "named": true
-        },
-        {
-          "type": "case_clauses",
-          "named": true
-        },
-        {
-          "type": "char_escape_seq",
-          "named": true
-        },
-        {
-          "type": "character_literal",
-          "named": true
-        },
-        {
-          "type": "floating_point_literal",
-          "named": true
-        },
-        {
-          "type": "fun_params",
-          "named": true
-        },
-        {
-          "type": "hk_type_param_clause",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "indented_expr",
-          "named": true
-        },
-        {
-          "type": "inline_expr",
-          "named": true
-        },
-        {
-          "type": "instance_expr",
-          "named": true
-        },
-        {
-          "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
-          "named": true
-        },
-        {
-          "type": "null_literal",
-          "named": true
-        },
-        {
-          "type": "outdent",
-          "named": true
-        },
-        {
-          "type": "prefix_operator",
-          "named": true
-        },
-        {
-          "type": "ref",
-          "named": true
-        },
-        {
-          "type": "refinement",
-          "named": true
-        },
-        {
-          "type": "return_expr",
-          "named": true
-        },
-        {
-          "type": "string_literal",
-          "named": true
-        },
-        {
-          "type": "symbol_literal",
-          "named": true
-        },
-        {
-          "type": "throw_expr",
-          "named": true
-        },
-        {
-          "type": "type",
-          "named": true
-        },
-        {
-          "type": "type_args",
-          "named": true
-        },
-        {
-          "type": "unicode_escape",
-          "named": true
-        },
-        {
-          "type": "while_expr",
           "named": true
         }
       ]
@@ -484,10 +337,6 @@
       "types": [
         {
           "type": "annotation",
-          "named": true
-        },
-        {
-          "type": "assign_expr",
           "named": true
         },
         {
@@ -539,6 +388,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "import",
           "named": true
         },
@@ -564,10 +417,6 @@
         },
         {
           "type": "local_modifier",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {
@@ -744,141 +593,6 @@
     }
   },
   {
-    "type": "catches",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "annotation",
-          "named": true
-        },
-        {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
-          "type": "block",
-          "named": true
-        },
-        {
-          "type": "boolean_literal",
-          "named": true
-        },
-        {
-          "type": "call_expr",
-          "named": true
-        },
-        {
-          "type": "case_clauses",
-          "named": true
-        },
-        {
-          "type": "char_escape_seq",
-          "named": true
-        },
-        {
-          "type": "character_literal",
-          "named": true
-        },
-        {
-          "type": "expr_case_clause",
-          "named": true
-        },
-        {
-          "type": "floating_point_literal",
-          "named": true
-        },
-        {
-          "type": "fun_params",
-          "named": true
-        },
-        {
-          "type": "hk_type_param_clause",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "indented_expr",
-          "named": true
-        },
-        {
-          "type": "inline_expr",
-          "named": true
-        },
-        {
-          "type": "instance_expr",
-          "named": true
-        },
-        {
-          "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
-          "named": true
-        },
-        {
-          "type": "null_literal",
-          "named": true
-        },
-        {
-          "type": "outdent",
-          "named": true
-        },
-        {
-          "type": "prefix_operator",
-          "named": true
-        },
-        {
-          "type": "ref",
-          "named": true
-        },
-        {
-          "type": "refinement",
-          "named": true
-        },
-        {
-          "type": "return_expr",
-          "named": true
-        },
-        {
-          "type": "string_literal",
-          "named": true
-        },
-        {
-          "type": "symbol_literal",
-          "named": true
-        },
-        {
-          "type": "throw_expr",
-          "named": true
-        },
-        {
-          "type": "type",
-          "named": true
-        },
-        {
-          "type": "type_args",
-          "named": true
-        },
-        {
-          "type": "unicode_escape",
-          "named": true
-        },
-        {
-          "type": "while_expr",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "character_literal",
     "named": true,
     "fields": {},
@@ -982,10 +696,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -1037,10 +747,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -1085,6 +791,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -1105,10 +815,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -1126,10 +832,6 @@
         },
         {
           "type": "prefix_operator",
-          "named": true
-        },
-        {
-          "type": "quoted",
           "named": true
         },
         {
@@ -1214,145 +916,6 @@
     }
   },
   {
-    "type": "expr_case_clause",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "annotation",
-          "named": true
-        },
-        {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
-          "type": "block",
-          "named": true
-        },
-        {
-          "type": "boolean_literal",
-          "named": true
-        },
-        {
-          "type": "call_expr",
-          "named": true
-        },
-        {
-          "type": "case_clauses",
-          "named": true
-        },
-        {
-          "type": "char_escape_seq",
-          "named": true
-        },
-        {
-          "type": "character_literal",
-          "named": true
-        },
-        {
-          "type": "floating_point_literal",
-          "named": true
-        },
-        {
-          "type": "fun_params",
-          "named": true
-        },
-        {
-          "type": "guard",
-          "named": true
-        },
-        {
-          "type": "hk_type_param_clause",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "indented_expr",
-          "named": true
-        },
-        {
-          "type": "inline_expr",
-          "named": true
-        },
-        {
-          "type": "instance_expr",
-          "named": true
-        },
-        {
-          "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
-          "named": true
-        },
-        {
-          "type": "null_literal",
-          "named": true
-        },
-        {
-          "type": "outdent",
-          "named": true
-        },
-        {
-          "type": "pattern",
-          "named": true
-        },
-        {
-          "type": "prefix_operator",
-          "named": true
-        },
-        {
-          "type": "ref",
-          "named": true
-        },
-        {
-          "type": "refinement",
-          "named": true
-        },
-        {
-          "type": "return_expr",
-          "named": true
-        },
-        {
-          "type": "string_literal",
-          "named": true
-        },
-        {
-          "type": "symbol_literal",
-          "named": true
-        },
-        {
-          "type": "throw_expr",
-          "named": true
-        },
-        {
-          "type": "type",
-          "named": true
-        },
-        {
-          "type": "type_args",
-          "named": true
-        },
-        {
-          "type": "unicode_escape",
-          "named": true
-        },
-        {
-          "type": "while_expr",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "floating_point_literal",
     "named": true,
     "fields": {}
@@ -1412,10 +975,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -1452,6 +1011,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -1472,10 +1035,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -1493,10 +1052,6 @@
         },
         {
           "type": "prefix_operator",
-          "named": true
-        },
-        {
-          "type": "quoted",
           "named": true
         },
         {
@@ -1595,10 +1150,6 @@
           "named": true
         },
         {
-          "type": "match_clause",
-          "named": true
-        },
-        {
           "type": "null_literal",
           "named": true
         },
@@ -1637,6 +1188,133 @@
     "type": "hex_numeral",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "if_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "annotation",
+          "named": true
+        },
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "boolean_literal",
+          "named": true
+        },
+        {
+          "type": "call_expr",
+          "named": true
+        },
+        {
+          "type": "case_clauses",
+          "named": true
+        },
+        {
+          "type": "char_escape_seq",
+          "named": true
+        },
+        {
+          "type": "character_literal",
+          "named": true
+        },
+        {
+          "type": "floating_point_literal",
+          "named": true
+        },
+        {
+          "type": "fun_params",
+          "named": true
+        },
+        {
+          "type": "hk_type_param_clause",
+          "named": true
+        },
+        {
+          "type": "if_expr",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "indented_expr",
+          "named": true
+        },
+        {
+          "type": "inline_expr",
+          "named": true
+        },
+        {
+          "type": "instance_expr",
+          "named": true
+        },
+        {
+          "type": "integer_literal",
+          "named": true
+        },
+        {
+          "type": "null_literal",
+          "named": true
+        },
+        {
+          "type": "outdent",
+          "named": true
+        },
+        {
+          "type": "prefix_operator",
+          "named": true
+        },
+        {
+          "type": "ref",
+          "named": true
+        },
+        {
+          "type": "refinement",
+          "named": true
+        },
+        {
+          "type": "return_expr",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        },
+        {
+          "type": "symbol_literal",
+          "named": true
+        },
+        {
+          "type": "throw_expr",
+          "named": true
+        },
+        {
+          "type": "type",
+          "named": true
+        },
+        {
+          "type": "type_args",
+          "named": true
+        },
+        {
+          "type": "unicode_escape",
+          "named": true
+        },
+        {
+          "type": "while_expr",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "indented_expr",
@@ -1892,10 +1570,6 @@
           "named": true
         },
         {
-          "type": "quoted",
-          "named": true
-        },
-        {
           "type": "ref",
           "named": true
         },
@@ -1945,25 +1619,6 @@
     "type": "prefix_operator",
     "named": true,
     "fields": {}
-  },
-  {
-    "type": "quoted",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "block",
-          "named": true
-        },
-        {
-          "type": "type",
-          "named": true
-        }
-      ]
-    }
   },
   {
     "type": "ref",
@@ -2016,10 +1671,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -2056,6 +1707,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -2073,10 +1728,6 @@
         },
         {
           "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {
@@ -2147,10 +1798,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -2187,6 +1834,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -2204,10 +1855,6 @@
         },
         {
           "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {
@@ -2316,10 +1963,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -2356,6 +1999,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -2373,10 +2020,6 @@
         },
         {
           "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {
@@ -2620,10 +2263,6 @@
           "named": true
         },
         {
-          "type": "assign_expr",
-          "named": true
-        },
-        {
           "type": "block",
           "named": true
         },
@@ -2660,6 +2299,10 @@
           "named": true
         },
         {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "indent",
           "named": true
         },
@@ -2677,10 +2320,6 @@
         },
         {
           "type": "integer_literal",
-          "named": true
-        },
-        {
-          "type": "match_clause",
           "named": true
         },
         {

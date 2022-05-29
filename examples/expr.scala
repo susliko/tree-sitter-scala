@@ -1,4 +1,6 @@
-inline foo match {
-  case x: String => y
+{
+  val x = 1
 }
-
+{
+  val x = "x"
+}

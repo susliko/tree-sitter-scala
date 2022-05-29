@@ -117,3 +117,31 @@ inline foo match {
             (ref))
           (block
             (ref)))))))
+
+================================================================================
+[expression] if else
+================================================================================
+
+if (flag) {
+  println("")
+} else {
+  println(1)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (if_expr
+    (ref)
+    (block
+      (call_expr
+        (ref)
+        (arguments
+          (argument
+            (string_literal)))))
+    (block
+      (call_expr
+        (ref)
+        (arguments
+          (argument
+            (integer_literal)))))))
