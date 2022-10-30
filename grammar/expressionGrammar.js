@@ -6,7 +6,7 @@ module.exports = grammar(typeGrammar, {
 
   inline: ($, type) => [
     ...type,
-    $.ascription,
+    // $.ascription,
   ],
 
   precedences: (_, type) => [
@@ -66,15 +66,16 @@ module.exports = grammar(typeGrammar, {
       prec('anonfunc', seq($.fun_params, choice('=>', '?=>'), $._expr)),
       prec('anonfunc', seq($.hk_type_param_clause, '=>', $._expr)),
       $.while_expr,
-      seq($._postfix_expr, optional($.ascription)), // TODO write as separate rule
+      // seq($._postfix_expr, optional($.ascription)), // TODO write as separate rule, LONG GENERATION!
+      $._simple_expr, // Custom simpler replacement for postfix_epr
       $.if_expr, // long generation
-      // $.try_expr, // long generation
+      $.try_expr, // long generation
       $.throw_expr,
       $.return_expr,
-      // $.for_expr, // long generation
-      // $.assign_expr,
-      $.inline_expr
-      // $.match_expr,
+      $.for_expr, // long generation
+      $.assign_expr,
+      $.inline_expr,
+      $.match_expr,
     ),
     fun_params: $ => choice($.bindings, $.id, '_'),
 
