@@ -16,7 +16,6 @@ module.exports = grammar(literalGrammar, {
     $.fun_arg_type,
     $.fun_type,
     $.type_case_clauses,
-    $.id,
     $.upper_bound,
     $.lower_bound,
   ],

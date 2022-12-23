@@ -19,10 +19,14 @@ println(x)
 
 (source_file
   (call_expr
-    (ref)
+    (ref
+      (id
+        (alphaid)))
     (arguments
       (argument
-        (ref)))))
+        (ref
+          (id
+            (alphaid)))))))
 
 ================================================================================
 [expression] while with braces
@@ -39,10 +43,14 @@ while (true) {
     (boolean_literal)
     (block
       (call_expr
-        (ref)
+        (ref
+          (id
+            (alphaid)))
         (arguments
           (argument
-            (ref)))))))
+            (ref
+              (id
+                (alphaid)))))))))
 
 ================================================================================
 [expression] while without braces
@@ -59,12 +67,18 @@ while true do {
     (boolean_literal)
     (block
       (call_expr
-        (ref)
+        (ref
+          (id
+            (alphaid)))
         (arguments
           (argument
-            (ref))
+            (ref
+              (id
+                (alphaid))))
           (argument
-            (ref)))))))
+            (ref
+              (id
+                (alphaid)))))))))
 
 ================================================================================
 [expression] throw
@@ -78,6 +92,8 @@ throw new Exception("boom!")
   (throw_expr
     (instance_expr
       (constr_app
+        (id
+          (alphaid))
         (argument
           (string_literal))))))
 
@@ -92,10 +108,14 @@ return foo(x)
 (source_file
   (return_expr
     (call_expr
-      (ref)
+      (ref
+        (id
+          (alphaid)))
       (arguments
         (argument
-          (ref))))))
+          (ref
+            (id
+              (alphaid))))))))
 
 ================================================================================
 [expression] inline
@@ -122,7 +142,7 @@ inline foo match {
 [expression] if else
 ================================================================================
 
-if (flag) {
+inline if (flag) {
   println("")
 } else {
   println(1)
@@ -132,16 +152,36 @@ if (flag) {
 
 (source_file
   (if_expr
-    (ref)
+    (ref
+      (id
+        (alphaid)))
     (block
       (call_expr
-        (ref)
+        (ref
+          (id
+            (alphaid)))
         (arguments
           (argument
             (string_literal)))))
     (block
       (call_expr
-        (ref)
+        (ref
+          (id
+            (alphaid)))
         (arguments
           (argument
             (integer_literal)))))))
+
+================================================================================
+[expression] algebraic
+================================================================================
+
+1 + 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (integer_literal)
+  (id
+    (op))
+  (integer_literal))

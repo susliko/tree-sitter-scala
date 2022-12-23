@@ -25,6 +25,7 @@ module.exports = grammar(typeGrammar, {
       'tuple',
       'new',
       'block',
+      'match', // custom
       'prefix',
       'postfix',
       'infix',
@@ -39,7 +40,6 @@ module.exports = grammar(typeGrammar, {
       'try',
       'anonfunc',
       'binding', //custom
-      'patvar', //custom
       'placeholder',
       'blockresult', //custom
       'blockstat', //custom
@@ -57,7 +57,14 @@ module.exports = grammar(typeGrammar, {
     ...type,
     [$.prefix_operator, $._simple_literal],
     [$.fun_params, $._simple_expr],
+    [$.id, $._simple_pattern],
+    [$.ref, $.fun_params],
+    [$.if_expr], // TODO check how 'inline if' resolved
   ],
+
+  // Promises faster compilation of grammar
+  // https://tree-sitter.github.io/tree-sitter/creating-parsers#keyword-extraction
+  word: $ => $.alphaid,
 
   rules: {
     source_file: $ => seq($._expr, $.nl),
@@ -66,19 +73,19 @@ module.exports = grammar(typeGrammar, {
       prec('anonfunc', seq($.fun_params, choice('=>', '?=>'), $._expr)),
       prec('anonfunc', seq($.hk_type_param_clause, '=>', $._expr)),
       $.while_expr,
-      // seq($._postfix_expr, optional($.ascription)), // TODO write as separate rule, LONG GENERATION!
-      $._simple_expr, // Custom simpler replacement for postfix_epr
-      $.if_expr, // long generation
-      $.try_expr, // long generation
+      seq($._postfix_expr, optional($.ascription)), // TODO write as separate rule
+      $.if_expr, // long
+      $.try_expr, // long
       $.throw_expr,
       $.return_expr,
-      $.for_expr, // long generation
+      $.for_expr, // long 
       $.assign_expr,
       $.inline_expr,
       $.match_expr,
     ),
     fun_params: $ => choice($.bindings, $.id, '_'),
 
+    // TODO does separation influence the parser size?
     if_expr: $ => prec.right('if',
       seq(
         optional('inline'),
@@ -92,69 +99,79 @@ module.exports = grammar(typeGrammar, {
       )
     ),
 
-    while_expr: $ => prec('while', 
+    while_expr: $ => prec('while',
       seq(
         'while',
-        choice(
-          seq('(', $._expr, ')', repeat($.nl)),
-          seq($._expr, 'do')
-        ),
+        $._while_cond_part,
         $._expr
       )
     ),
 
-    try_expr: $ => prec.right('try', 
+    _while_cond_part: $ =>
+      choice(
+        seq('(', $._expr, ')', repeat($.nl)),
+        seq($._expr, 'do')
+      ),
+
+    try_expr: $ => prec.right('try',
       seq(
         'try',
         $._expr,
-        optional(seq('catch', optional(seq('case', $.pattern, optional($.guard), '=>')), $._expr)),
-        optional(seq('finally', $._expr)),
+        optional($._try_catch_part),
+        optional($._try_finally_part),
       ),
     ),
+
+    _try_catch_part: $ => prec('try', seq('catch', optional(seq('case', $.pattern, optional($.guard), '=>')), $._expr)),
+    _try_finally_part: $ => prec('try', seq('finally', $._expr)),
+
     // expr_case_clause: $ => seq(, $._expr),
 
     throw_expr: $ => prec('throw', seq('throw', $._expr)),
     return_expr: $ => prec.right('return', seq('return', optional($._expr))),
-    assign_expr: $ => prec('assign', 
+    assign_expr: $ => prec('assign',
       seq(
-        choice(
-          seq(optional(seq($._simple_expr, '.')), $.id),
-          seq($.prefix_operator, $._simple_expr),
-          seq($._simple_expr, $.arguments),
-        ),
+        $._assign_left_part,
         '=',
         $._expr
       ),
     ),
+    _assign_left_part: $ =>
+      choice(
+        seq(optional(seq($._simple_expr, '.')), $.id),
+        seq($.prefix_operator, $._simple_expr),
+        seq($._simple_expr, $.arguments),
+      ),
+
     inline_expr: $ => seq('inline', $._infix_expr, $.match_clause),
 
     ascription: $ => prec('annotexpr', choice(
       seq(':', $._infix_type),
-      seq(':', $.annotation, repeat($.annotation))
+      seq(':', repeat1($.annotation))
     )),
 
-    _postfix_expr: $ => prec('postfix', seq($._infix_expr, optional($.id))),
+    _postfix_expr: $ => prec.right('postfix', seq($._infix_expr, optional($.id))),
     _infix_expr: $ => prec.right('infix', choice(
       $._prefix_expr,
-      seq($._infix_expr, $.id, optional($.nl), $._infix_expr),
-      seq($._infix_expr, $.id, ':', $.indented_expr),
+      seq($._prefix_expr, $.id, optional($.nl), $._prefix_expr),
+      seq($._expr, $.id, ':', $.indented_expr),
     )),
-    match_expr: $ => seq($._simple_expr, $.match_clause), // Custom. Is _simple_expr good?
+    match_expr: $ => prec('match', seq($._simple_expr, $.match_clause)), // Some custom rule, TODO WTF?
     match_clause: $ => seq('match', block($.case_clauses, $)),
     _prefix_expr: $ => prec('prefix', seq(optional($.prefix_operator), $._simple_expr)),
     prefix_operator: _ => prec('prefix', choice('-', '+', '~', '!')),
 
     _simple_expr: $ => prec.right('simpleexpr', choice(
-      $.ref, 
-      $._literal, 
+      $.ref,
+      $._literal,
       prec('placeholder', '_'),
-      $._block_expr, 
+      $._block_expr,
       // seq('$', '{',
       //   $.block,
       //   '}'), // TODO comment in grammar: unless inside quoted pattern // TODO what is it?
       // seq('$', '{', $.pattern, '}'), // TODO comment in grammar: only inside quoted pattern // TODO what is it?
       // $.symbol_literal, // TODO comment in grammar: only inside splices // TODO what is it?
-      $.instance_expr, 
+      $.instance_expr,
       // seq($.simple_expr, '.', $.match_clause),
       $.call_expr,
       prec('typeapply', seq($._simple_expr, $.type_args)),
@@ -164,8 +181,8 @@ module.exports = grammar(typeGrammar, {
     )),
 
     instance_expr: $ => prec('new', seq('new', choice(
-      seq($.constr_app, repeat(seq('with', $.constr_app)), optional($.template_body)), 
-      seq($.template_body), 
+      seq($.constr_app, repeat(seq('with', $.constr_app)), optional($.template_body)),
+      seq($.template_body),
     ))), // custom alias
 
     call_expr: $ => seq($._simple_expr, $.arguments), // custom alias
@@ -204,7 +221,7 @@ module.exports = grammar(typeGrammar, {
       $.import,
       seq(repeat(seq($.annotation, optional($.nl))), repeat($.local_modifier), $.def),
       $.extension,
-      $._expr, 
+      $._expr,
       $.end_marker
     )),
     _block_result: $ => prec.right('blockresult', choice(
@@ -220,15 +237,20 @@ module.exports = grammar(typeGrammar, {
       )),
       $._expr
     )),
+
     for_expr: $ => prec('for', seq(
-      'for', 
+      'for',
+      $._for_body,
+      $._expr
+    )),
+
+    _for_body: $ =>
       choice(
         seq('(', $.enumerators0, ')', repeat($.nl), optional(choice('do', 'yield'))),
         seq('{', $.enumerators0, '}', repeat($.nl), optional(choice('do', 'yield'))),
         seq($.enumerators0, choice('do', 'yield'))
       ),
-      $._expr
-    )),
+
     enumerators0: $ => seq(repeat($.nl), $.enumerators, optional($.semi)),
 
     enumerators: $ => prec.right(seq($.generator, repeat(choice(seq($.semi, $.enumerator), $.guard)))), // TODO review prec.right
@@ -241,7 +263,7 @@ module.exports = grammar(typeGrammar, {
     guard: $ => seq('if', $._postfix_expr),
 
 
-    case_clauses: $ => seq($.case_clause, repeat($.case_clause)),
+    case_clauses: $ => repeat1($.case_clause),
     case_clause: $ => prec.right(seq(
       'case',
       $.pattern,
@@ -255,23 +277,23 @@ module.exports = grammar(typeGrammar, {
     _infix_pattern: $ => seq($._simple_pattern, repeat(seq($.id, optional($.nl), $._simple_pattern))),
 
     _simple_pattern: $ => prec('simplepattern', choice(
-      $.pat_var,
+      $.id,
       $._literal,
-      prec('tuple', seq('(', optional($.patterns), ')')), 
-      prec('funcapply', seq($._simple_pattern1, optional($.type_args), optional($.argument_patterns))), 
+      prec('tuple', seq('(', optional($.patterns), ')')),
+      prec('funcapply', seq($._simple_pattern1, optional($.type_args), optional($.argument_patterns))),
       seq('given', $._refined_type)
     )),
     _simple_pattern1: $ => prec('simplepattern', choice($.ref, seq($._simple_pattern1, '.', $.id))),
 
-    pat_var: $ => prec('patvar', choice($.varid, '_')),
     patterns: $ => prec.right(seq($.pattern, repeat(seq(',', $.pattern)))), // TODO review prec.right
 
     argument_patterns: $ => prec('argpatterns', choice(
       seq('(', optional($.patterns), ')'),
-      seq('(', optional(seq($.patterns, ',')), $.pat_var, ':', '_', '*', ')')
+      seq('(', optional(seq($.patterns, ',')), $.id, ':', '_', '*', ')')
     )),
 
     // Bindings and imports section, but used in expressions
+    // TODO ensure completeness
     annotation: $ => prec.right(seq('@', $._simple_type1, repeat($._arguments_in_parens))), // TODO review prec.right
     bindings: _ => '!bindings!',
     constr_app: $ => prec.right(seq($._simple_type1, repeat($.annotation), repeat($._arguments_in_parens))), // TODO review prec.right

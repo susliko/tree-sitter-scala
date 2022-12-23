@@ -1,14 +1,14 @@
-const white_space = /[ \t\r\n]/
-const upper = /[A-Z$_\p{Lu}]/
-const lower = /[a-z\p{Ll}]/
-const letter = /[a-zA-Z$_\p{Ll}\p{Lu}\p{Lo}\p{Lt}\p{Lm}\p{Nl}]/
-const digit = /[0-9]/
-const op = /[!#%&*+-\/:<=>?@\\^|~\p{Sm}\p{So}]+/
-const hex_digit = /[0-9A-Fa-f]/
-// const non_zero_digit = /[1-9]/
-const non_zero_digit = choice('1', '2', '3', '4', '5', '6', '7', '8', '9')
+const white_space_variants = " \t\r\n"
+const white_space = new RegExp(`[${white_space_variants}]`)
+const digit_variants = "0-9"
+const digit = new RegExp(`[${digit_variants}]`)
+const hex_digit = `[0-9A-Fa-f]`
+const char_escape_seq = `\\\\[btnfr"'\\\\]`
+const unicode_escape = `\\\\[u]+${hex_digit}${hex_digit}${hex_digit}${hex_digit}`;
+const op = /[!#%&*+-\/:<=>?@\\^|~]+/
 
-const idrest = seq(repeat(choice(letter, digit)), optional(seq('_', op)))
+const id = /[a-zA-Z_]\w*/
+const non_zero_digit = /[1-9]/
 
 const digits = (digitRule) => seq(
   token.immediate(digitRule),
@@ -22,9 +22,8 @@ module.exports = grammar({
   name: 'scala',
 
   inline: $ => [
-    $.plainid,
+    // $.id,
     $.string_element,
-    $.char_element,
     $.decimal_numeral,
     $.exponent_part,
     $.nl,
@@ -32,7 +31,6 @@ module.exports = grammar({
   ],
 
   precedences: _ => [
-    // Literals
     [
       'ref',
       'ids'
@@ -59,7 +57,13 @@ module.exports = grammar({
 
     _literal: $ => choice($._simple_literal, $.symbol_literal, $.null_literal),
 
-    symbol_literal: $ => seq("'", repeat1($.char_element)), // until 2.13
+    symbol_literal: _ => seq("'",
+      token(repeat1(token.immediate(choice(
+        /[^'`"\\\n\r]/,
+        new RegExp(unicode_escape),
+        new RegExp(char_escape_seq),
+      ))))
+    ),
 
     null_literal: _ => 'null',
 
@@ -73,28 +77,17 @@ module.exports = grammar({
 
 
     // Unicode escapes
-    unicode_escape: _ => token.immediate(seq('\\', /[u]+/, hex_digit, hex_digit, hex_digit, hex_digit)),
+    unicode_escape: _ => token.immediate(new RegExp(unicode_escape)),
 
     // Lexical Syntax
-    paren: _ => choice('(', ')', '[', ']', '{', '}', "'(", "'[", "'{"), // TODO remove?
-    delim: _ => choice('`', "'", '"', '.', ';', ','), // TODO remove?
 
-    char_escape_seq: _ => token.immediate(/\\[btnfr"'\\]/),
+    char_escape_seq: _ => token.immediate(new RegExp(char_escape_seq)),
 
-    plainid: _ => choice(
-      seq(choice(upper, lower), token.immediate(idrest)),
-      op,
-    ),
-    varid: _ => seq(lower, idrest),
-
-    id: $ => choice(
-      $.plainid,
-      seq(
-        '`',
-        repeat($.char_element),
-        '`'
-      )
-    ),
+    // TODO add backticks variant
+    // !#%&*+-\/:<=>?@\\^|~
+    alphaid: _ => /[a-zA-Z_]\w*/,
+    op: _ => /[!#%&*+-\/:<=>?@\\^|~]+/,
+    id: $ => choice($.alphaid, $.op),
 
     integer_literal: $ => seq(choice($.decimal_numeral, $.hex_numeral), optional(choice('L', 'l'))),
     decimal_numeral: _ => choice(
@@ -102,15 +95,15 @@ module.exports = grammar({
       seq(
         non_zero_digit,
         token.immediate(optional(seq(
-            repeat(choice(digit, '_')),
-            digit
+          repeat(choice(digit, '_')),
+          digit
         )))
       )
     ),
     hex_numeral: _ => seq(
       '0',
       choice('x', 'X'),
-      digits(hex_digit),
+      digits(new RegExp(hex_digit)),
     ),
 
     floating_point_literal: $ => choice(
@@ -140,26 +133,30 @@ module.exports = grammar({
 
     boolean_literal: _ => choice('true', 'false'),
 
-    character_literal: $ => seq("'", $.char_element, "'"),
+    character_literal: $ => seq("'", $._char_element, "'"),
 
     char: _ => "foobar", // TODO no such rule in the grammar figure out whaut should it mean
 
     string_literal: $ => choice(
       seq('"', repeat($.string_element), '"'),
       seq('"""',
-        repeat(seq(optional('"'), optional('"'), /[^"]/ )), /* TODO needs to be char without '"' */
+        repeat(seq(optional('"'), optional('"'), /[^"]/)), /* TODO needs to be char without '"' */
         repeat('"'),
         '"""'
       )
     ),
 
-    string_element: $ => choice("'", '`', $.char_element),
+    string_element: $ => choice("'", '`', $._char_element),
 
-    char_element: $ => choice(
+    _char_element: $ => (choice(
       token.immediate(/[^'`"\\\n\r]/),
       $.unicode_escape,
-      $.char_escape_seq
-    ),
+      $.char_escape_seq,
+    )),
+
+    unicode_escape: $ => token.immediate(new RegExp(unicode_escape)),
+
+    char_escape_seq: $ => token.immediate(new RegExp(char_escape_seq)),
 
     // This one is inlined since it matches empty string
     // string_format: $ => repeat(

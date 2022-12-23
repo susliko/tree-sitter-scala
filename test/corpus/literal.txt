@@ -1,63 +1,67 @@
-=========
-[literal] Coments
-=========
-this is not a coment // this is a comment
-----
+================================================================================
+[literal] Comments
+================================================================================
+ // this is a comment
+--------------------------------------------------------------------------------
 
-(source_file (id) (id) (id) (id) (id) (comment))
+(source_file
+  (comment))
 
-=========
+================================================================================
 [literal] Symbol literal
-=========
+================================================================================
 'hello
 'he\nll\bo
 'he\u5c5fllo
-----
+--------------------------------------------------------------------------------
 
 (source_file
   (symbol_literal)
-  (symbol_literal (char_escape_seq) (char_escape_seq))
-  (symbol_literal (unicode_escape)))
+  (symbol_literal)
+  (symbol_literal))
 
-=========
+================================================================================
 [literal] Chars
-=========
+================================================================================
 'a'
 '\u2e44'
 'ש'
 '\t'
 'я'
-----
+--------------------------------------------------------------------------------
 
 (source_file
   (character_literal)
-  (character_literal (unicode_escape))
+  (character_literal
+    (unicode_escape))
   (character_literal)
-  (character_literal (char_escape_seq))
+  (character_literal
+    (char_escape_seq))
   (character_literal))
 
-=========
+================================================================================
 [literal] String content unicode
-=========
+================================================================================
 
 "abc\u304bпрограмма"
 "hello ふぉお"
 "שלום"
 
-----
+--------------------------------------------------------------------------------
 
 (source_file
-  (string_literal (unicode_escape))
+  (string_literal
+    (unicode_escape))
   (string_literal)
   (string_literal))
 
-=========
+================================================================================
 [literal] String content escape
-=========
+================================================================================
 
 "a\ta\n\b\'\"hello\\bc\n\ra\f"
 
-----
+--------------------------------------------------------------------------------
 
 (source_file
   (string_literal
@@ -71,29 +75,32 @@ this is not a coment // this is a comment
     (char_escape_seq)
     (char_escape_seq)))
 
-=========
+================================================================================
 [literal] Null
-=========
+================================================================================
 
 null
 
-----
+--------------------------------------------------------------------------------
 
-(source_file (null_literal))
+(source_file
+  (null_literal))
 
-=========
+================================================================================
 [literal] Boolean
-=========
+================================================================================
 
 true false
 
-----
+--------------------------------------------------------------------------------
 
-(source_file (boolean_literal) (boolean_literal))
+(source_file
+  (boolean_literal)
+  (boolean_literal))
 
-=========
+================================================================================
 [literal] Integers
-=========
+================================================================================
 
 69
 420
@@ -102,19 +109,19 @@ true false
 69l
 420L
 
-----
+--------------------------------------------------------------------------------
 
 (source_file
- (integer_literal)
- (integer_literal)
- (integer_literal)
- (integer_literal)
- (integer_literal)
- (integer_literal))
+  (integer_literal)
+  (integer_literal)
+  (integer_literal)
+  (integer_literal)
+  (integer_literal)
+  (integer_literal))
 
-=========
+================================================================================
 [literal] Floats
-=========
+================================================================================
 
 6.9
 .420
@@ -124,13 +131,24 @@ true false
 1_2_3.123e-1_2_3
 1_2_3.123E+1_2_3D
 
-----
+--------------------------------------------------------------------------------
 
 (source_file
- (floating_point_literal)
- (floating_point_literal)
- (floating_point_literal)
- (floating_point_literal)
- (floating_point_literal)
- (floating_point_literal)
- (floating_point_literal))
+  (floating_point_literal)
+  (floating_point_literal)
+  (floating_point_literal)
+  (floating_point_literal)
+  (floating_point_literal)
+  (floating_point_literal)
+  (floating_point_literal))
+
+================================================================================
+[literal] Identifier
+================================================================================
+
+foo
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (id))
