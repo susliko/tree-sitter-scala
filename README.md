@@ -1,3 +1,6 @@
+# Archivation note
+Archived due to the rebirth of the old [tree-sitter-scala](https://github.com/tree-sitter/tree-sitter-scala/)
+
 # tree-sitter-scala
 This is a work-in-progress over [Scala 3 ebnf](https://github.com/lampepfl/dotty/blob/main/docs/_docs/internals/syntax.md)
 
